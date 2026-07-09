@@ -1,0 +1,177 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --border: #d8dce2;
+  --text: #1b1f24;
+  --muted: #5b636e;
+  --accent: #2f6f4f;
+  --error: #b3261e;
+  --pass: #1f7a4d;
+  --warn: #9a6b00;
+  --fail: #b3261e;
+  --pending: #5b636e;
+
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171a;
+    --surface: #1d2126;
+    --border: #333a42;
+    --text: #e8eaed;
+    --muted: #9aa2ad;
+    --accent: #57b088;
+    --error: #f2857c;
+    --pass: #57b088;
+    --warn: #d6a53a;
+    --fail: #f2857c;
+    --pending: #9aa2ad;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-brand {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.app-brand-sub {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.nav-link {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.nav-link-active {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+}
+
+.panel {
+  width: 100%;
+  max-width: 34rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.panel-head h1 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.kv {
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.kv-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.kv-row dt {
+  color: var(--muted);
+}
+
+.kv-row dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--error);
+}
+
+.badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+.badge-pass {
+  color: var(--pass);
+}
+
+.badge-warn {
+  color: var(--warn);
+}
+
+.badge-fail {
+  color: var(--fail);
+}
+
+.badge-pending {
+  color: var(--pending);
+}
