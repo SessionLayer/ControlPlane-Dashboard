@@ -17,35 +17,37 @@ npm audit --audit-level=high
 npm run generate:api
 git diff --exit-code -- src/api
 
-# audit/ROUND gate: a finding at medium+ severity must be explicitly resolved
-# (Verified-Fixed or Accepted-Risk). This scan FAILS CLOSED — a malformed or
-# unrecognized Severity/Status line blocks the gate rather than being ignored.
-# Extract only the first word of each field so trailing annotations (e.g.
-# "medium (mitigated)") cannot mangle the token.
+# audit/ROUND gate — NO-DEFER (Session 3 §7): block on ANY finding whose Status
+# is Open, of ANY severity (critical|high|medium|low|info), AND fail on any
+# finding whose Status is Deferred — the no-defer rule bans kicking work down the
+# road. Verified-Fixed and Accepted-Risk are the only allowed statuses. This scan
+# FAILS CLOSED — a malformed or unrecognized Status line blocks the gate rather
+# than being ignored.
 open=0
+deferred=0
+bad=0
 shopt -s nullglob
 for f in audit/F-*.md; do
-  sev=$(sed -nE 's/^- *Severity:[[:space:]]*([A-Za-z]+).*/\1/Ip' "$f" | head -1 | tr 'A-Z' 'a-z')
-  st=$(sed -nE 's/^- *Status:[[:space:]]*([A-Za-z-]+).*/\1/Ip' "$f" | head -1 | tr 'A-Z' 'a-z')
-  case "$sev" in
-    critical | high | medium)
-      case "$st" in
-        verified-fixed | accepted-risk) : ;; # resolved — does not block
-        *)
-          echo "UNRESOLVED $sev (status='${st:-<missing>}'): $f"
-          open=$((open + 1))
-          ;;
-      esac
-      ;;
-    low | info) : ;; # below the blocking threshold
-    *)
-      echo "UNRECOGNIZED severity '${sev:-<missing>}' in $f (blocking, fail-closed)"
+  st=$(sed -nE 's/^- *Status:[[:space:]]*(.*)/\1/Ip' "$f" | head -1 | tr 'A-Z' 'a-z' | tr -cd 'a-z-')
+  case "$st" in
+    verified-fixed | accepted-risk) : ;;
+    open)
+      echo "OPEN finding: $f"
       open=$((open + 1))
+      ;;
+    deferred)
+      echo "DEFERRED finding (banned by the no-defer gate): $f"
+      deferred=$((deferred + 1))
+      ;;
+    *)
+      echo "UNPARSEABLE/unknown status ('$st'): $f"
+      bad=$((bad + 1))
       ;;
   esac
 done
-[ "$open" -gt 0 ] && {
-  echo "$open unresolved medium+ / malformed finding(s)"
+total=$((open + deferred + bad))
+[ "$total" -gt 0 ] && {
+  echo "findings gate FAILED: $open open, $deferred deferred, $bad unparseable"
   exit 1
 }
 echo "gate OK"
