@@ -5,7 +5,7 @@ version: 2
 updates:
   # npm dependencies (package.json / package-lock.json at the repo root).
   - package-ecosystem: npm
-    directory: "/"
+    directory: '/'
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
@@ -17,7 +17,7 @@ updates:
 
   # GitHub Actions used by .github/workflows (kept SHA-pinned).
   - package-ecosystem: github-actions
-    directory: "/"
+    directory: '/'
     schedule:
       interval: weekly
     labels:
