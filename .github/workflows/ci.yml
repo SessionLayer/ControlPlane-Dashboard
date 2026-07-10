@@ -10,6 +10,12 @@ on:
 permissions:
   contents: read
 
+# Cancel superseded runs on the same ref so a hung/old build does not sit in the
+# queue or run to the default timeout.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   gate:
     runs-on: ubuntu-latest
