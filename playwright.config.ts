@@ -25,11 +25,17 @@ export default defineConfig({
   ],
   // Serve the production build, mirroring what we actually ship. The build runs
   // here too so `npm run test:e2e` is self-contained; in the gate it runs after
-  // `npm run build`, and locally an already-running preview is reused.
+  // `npm run build`, and locally an already-running preview is reused. The OIDC
+  // vars are baked in so the auth-flow smoke can drive a route-mocked IdP.
   webServer: {
     command: 'npm run build && npm run preview',
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
+    env: {
+      ...process.env,
+      VITE_OIDC_ISSUER: 'https://idp.example.test',
+      VITE_OIDC_CLIENT_ID: 'sessionlayer-dashboard-e2e',
+    },
   },
 });
