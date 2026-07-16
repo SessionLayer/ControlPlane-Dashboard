@@ -8,8 +8,8 @@ import {
 import { CallbackPage } from './auth/CallbackPage';
 import { LoginPage } from './auth/LoginPage';
 import { buildFeatureRoutes } from './features';
+import { OverviewScreen } from './features/overview';
 import { AuthedLayout } from './layout/AuthedLayout';
-import { HomePlaceholder } from './layout/HomePlaceholder';
 import { NotFound } from './layout/NotFound';
 import { RouteError } from './components/RouteError';
 
@@ -41,7 +41,7 @@ const authedRoute = createRoute({
 const indexRoute = createRoute({
   getParentRoute: () => authedRoute,
   path: '/',
-  component: HomePlaceholder,
+  component: OverviewScreen,
 });
 
 const routeTree = rootRoute.addChildren([

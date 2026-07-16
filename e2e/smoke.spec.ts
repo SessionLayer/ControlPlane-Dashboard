@@ -46,9 +46,15 @@ async function stubControlPlane(page: Page): Promise<void> {
       headers: CORS,
     }),
   );
+  // Every list GET returns an empty envelope. The superset of keys ({items} for
+  // *Page, {nodes}/{joinTokens} for the runtime lists) keeps whichever hook reads
+  // it happy — the overview fires all of these on the landing route.
   await page.route('**/v1/**', (route) => {
     if (route.request().method() !== 'GET') return route.continue();
-    return route.fulfill({ json: { items: [] }, headers: CORS });
+    return route.fulfill({
+      json: { items: [], nodes: [], joinTokens: [] },
+      headers: CORS,
+    });
   });
 }
 
@@ -70,7 +76,8 @@ test('OIDC authorization-code + PKCE flow yields an in-memory bearer', async ({
   // Mock the IdP: the authorize redirect bounces back to /auth/callback echoing
   // the PKCE `state`; the token endpoint returns the ID token.
   await page.route('**/authorize?*', (route) => {
-    const state = new URL(route.request().url()).searchParams.get('state') ?? '';
+    const state =
+      new URL(route.request().url()).searchParams.get('state') ?? '';
     // The redirect target MUST be absolute to the app origin — a relative path
     // would resolve against the IdP origin (this response's origin).
     return route.fulfill({

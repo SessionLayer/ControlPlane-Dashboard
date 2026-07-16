@@ -1,16 +1,38 @@
 import type { AnyRoute } from '@tanstack/react-router';
 import type { RequestHandler } from 'msw';
 
+import { createAccessRoutes, accessHandlers } from './access';
+import { createFleetRoutes, fleetHandlers } from './fleet';
+import { createIrRoutes, irHandlers } from './ir';
+import {
+  createObservabilityRoutes,
+  observabilityHandlers,
+} from './observability';
+import { createPoliciesRoutes, policiesHandlers } from './policies';
+import { overviewHandlers } from './overview';
+
 /**
- * Integration seam for the feature screen-groups (Parts B–F). Each feature area
- * owns files under `src/features/<area>/` and exports a route factory
- * `createXRoutes(parent): AnyRoute[]` plus its MSW handlers; they are composed
- * here so the shared router (`router.tsx`) and test server (`test/handlers.ts`)
- * never need per-feature edits that would collide across parallel authors.
+ * Integration seam for the feature screen-groups (Parts B–F). Each area owns its
+ * files under `src/features/<area>/` and exports a route factory + MSW handlers;
+ * they are composed here so the shared router and test server never need
+ * per-feature edits. The overview screen mounts directly on the index route
+ * (see router.tsx), so it contributes handlers only.
  */
 export function buildFeatureRoutes(parent: AnyRoute): AnyRoute[] {
-  void parent;
-  return [];
+  return [
+    ...createAccessRoutes(parent),
+    ...createPoliciesRoutes(parent),
+    ...createFleetRoutes(parent),
+    ...createIrRoutes(parent),
+    ...createObservabilityRoutes(parent),
+  ];
 }
 
-export const featureHandlers: RequestHandler[] = [];
+export const featureHandlers: RequestHandler[] = [
+  ...accessHandlers,
+  ...policiesHandlers,
+  ...fleetHandlers,
+  ...irHandlers,
+  ...observabilityHandlers,
+  ...overviewHandlers,
+];
