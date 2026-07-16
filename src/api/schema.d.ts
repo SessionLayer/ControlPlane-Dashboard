@@ -48,6 +48,1455 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/oauth2/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * OAuth 2.0 client-credentials token endpoint (machine identity).
+         * @description Machine consumers exchange a client credential — a `private_key_jwt`
+         *     client assertion (RFC 7523) or a mutual-TLS client certificate,
+         *     preferred over a static secret — for a short-lived CP-signed bearer
+         *     token (Design §5.6, FR-AUTH-12). The token resolves to a first-class
+         *     RBAC principal. The client authenticates itself here, so the endpoint is
+         *     not behind the bearer/mTLS API gate; the `clientCredentials`/`mtls`
+         *     schemes below document the accepted client-authentication methods.
+         */
+        post: operations["issueMachineToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue a single-use OTP for an identity (admin).
+         * @description Server-generates a single-use, short-TTL OTP bound to an identity and
+         *     allowed principals (Design §5.4, FR-AUTH-9). The raw OTP is returned once
+         *     (for out-of-band delivery); only its hash is stored. Platform-RBAC gated
+         *     (`user:manage`) and audited.
+         */
+        post: operations["issueOtp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/pins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List pins for an identity (admin). */
+        get: operations["listPins"];
+        put?: never;
+        /**
+         * Create an authN-shortcut pin (admin).
+         * @description Pins a public-key fingerprint to `{identity, source-cidr, principals}`
+         *     with a TTL capped at the authorization TTL (Design §5.5, FR-AUTH-10).
+         *     Source IP is a deny-only reducer. Platform-RBAC gated + audited.
+         */
+        post: operations["createPin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/pins/{pinId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke a pin (admin / offboarding / lock). */
+        delete: operations["revokePin"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/service-accounts/{serviceAccountId}/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue a machine-consumer credential (admin).
+         * @description Issues a rotatable, revocable credential for a service account
+         *     (FR-AUTH-12): a `private_key_jwt` public-key/JWKS reference, an mTLS
+         *     certificate fingerprint, or (discouraged) a generated `client_secret`
+         *     returned once. Stored hashed / by reference. Platform-RBAC gated +
+         *     audited.
+         */
+        post: operations["issueServiceAccountCredential"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/service-accounts/{serviceAccountId}/credentials/{credentialId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke a machine-consumer credential (admin).
+         * @description Revocation takes effect immediately (new sessions denied, FR-AUTH-12).
+         */
+        delete: operations["revokeServiceAccountCredential"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/device": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Begin an OIDC device-authorization flow (RFC 8628).
+         * @description Starts a device flow bound to the SSH source context (Design §5.2,
+         *     FR-AUTH-3). Returns the user code + CP verification URI to present to the
+         *     user, and the device code the caller polls with. Fallback-only. The
+         *     caller is the Gateway (mTLS); S7 will move this onto the auth gRPC plane.
+         */
+        post: operations["beginDeviceFlow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/device/poll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Poll a device flow for completion (RFC 8628).
+         * @description Polls with the opaque device code (its own credential). Returns
+         *     `pending` until the user approves at the verification page, then
+         *     `authorized` with the resolved identity, or `denied`/`expired`. Public
+         *     (the device code is the authenticator); rate-limited.
+         */
+        post: operations["pollDeviceFlow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/locks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List active locks (admin).
+         * @description Lists the current unexpired locks. Platform-RBAC gated (`lock:read`) +
+         *     audited (Design §8.3; FR-LOCK-1). A lock is the incident-response deny
+         *     primitive; the deny reason is operator-only.
+         */
+        get: operations["listLocks"];
+        put?: never;
+        /**
+         * Create a lock (admin).
+         * @description Creates an incident-response lock that blocks new session issuance AND
+         *     tears down existing matching sessions on every Gateway (Design §8.3,
+         *     §8.4; FR-LOCK-1/2), pushed over the actively-pushed deny-list. Ingest
+         *     validation rejects an empty/unrecognised target; a fleet-wide lock
+         *     requires an explicit `all: true`. Platform-RBAC gated (`lock:write`) +
+         *     audited.
+         */
+        post: operations["createLock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/locks/{lockId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Release a lock (admin).
+         * @description Releases (deletes) a lock; the removal is pushed to every Gateway.
+         *     Releasing a lock only stops future denial — it never resurrects a
+         *     torn-down session. Platform-RBAC gated (`lock:write`) + audited.
+         */
+        delete: operations["releaseLock"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/join-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List active join tokens (admin).
+         * @description Lists the current unconsumed, unexpired join tokens. The raw token value
+         *     is NEVER returned (only its metadata) — it is shown exactly once at
+         *     issuance. Platform-RBAC gated (`node:enroll`) + audited (Design §8.1;
+         *     FR-JOIN-2).
+         */
+        get: operations["listJoinTokens"];
+        put?: never;
+        /**
+         * Issue an agent join token (admin).
+         * @description Issues a short-lived, single-use, self-destruct join token bound to a
+         *     stable node identity/scope (Design §8.1; FR-JOIN-2/6). The raw token is
+         *     returned exactly ONCE (for out-of-band delivery to the joining Agent);
+         *     only its SHA-256 hash is stored. Because issuance is a pure API
+         *     operation, an autoscaler/config-mgmt re-provisions a token-join agent
+         *     after a full lapse without a human. Platform-RBAC gated (`node:enroll`)
+         *     + audited.
+         */
+        post: operations["issueJoinToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/join-tokens/{joinTokenId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke a join token (admin).
+         * @description Revokes (deletes) an unconsumed join token so it can never be used.
+         *     Idempotent. Revoking an already-consumed token has no effect on the
+         *     identity it produced (revocation of an issued identity is a Lock, §8.1).
+         *     Platform-RBAC gated (`node:enroll`) + audited.
+         */
+        delete: operations["revokeJoinToken"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/nodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List nodes (admin).
+         * @description Lists enrolled nodes with their connectivity model, lifecycle status, and
+         *     health (Design §12A; FR-NODE-1/2). Removed nodes are excluded by default.
+         *     Platform-RBAC gated (`node:enroll`) + audited.
+         */
+        get: operations["listNodes"];
+        put?: never;
+        /**
+         * Register an agentless node (admin).
+         * @description Enrolls an AGENTLESS node (Design §9.2/§9.3; FR-NODE-1): registers its dial
+         *     address and host-identity material — a host-CA-signed host certificate OR
+         *     an explicitly pinned host key (at least one; NEVER TOFU) — with no software
+         *     install. An agent node instead joins via a join token
+         *     (`POST /v1/join-tokens`). Enrollment MAY require approval (operator
+         *     setting): when on, the node starts `pending` and is excluded from targeting
+         *     until activated. Provisioning is a pure API flow (closes the S15 dev-seed
+         *     gap). Platform-RBAC gated (`node:enroll`) + audited.
+         */
+        post: operations["registerNode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/nodes/{nodeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a node (admin).
+         * @description Returns one node by id. Platform-RBAC gated (`node:enroll`) + audited.
+         */
+        get: operations["getNode"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove a node (admin).
+         * @description Deregisters the node (soft-remove: status `removed`, excluded from
+         *     targeting; session/audit history preserved) and, for an AGENT node, REVOKES
+         *     its agent credential — the identity is flipped off `active` and a covering
+         *     Lock is pushed, so the generation counter + lock make a stale clone
+         *     unusable and re-join cannot bypass the revocation (FR-NODE-3). Idempotent.
+         *     Platform-RBAC gated (`node:remove`) + audited.
+         */
+        delete: operations["removeNode"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/nodes/{nodeId}/quarantine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quarantine a node (admin).
+         * @description Immediately blocks NEW sessions to the node and tears down or drains
+         *     EXISTING ones (FR-NODE-3), expressed as a top-tier S10 Lock on the node
+         *     (deny wins) actively pushed to every Gateway — fail-closed. The
+         *     `existingSessions` policy selects `kill` (default, torn down at once) vs
+         *     `drain` (finish, no new channels). Platform-RBAC gated (`node:quarantine`)
+         *     + audited.
+         */
+        post: operations["quarantineNode"];
+        /**
+         * Release a node from quarantine (admin).
+         * @description Lifts a quarantine: releases the node Lock (pushed to every Gateway) and
+         *     returns the node to `active`. Never resurrects a torn-down session.
+         *     Idempotent. Platform-RBAC gated (`node:quarantine`) + audited.
+         */
+        delete: operations["releaseQuarantine"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jit-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List JIT requests (admin).
+         * @description Lists JIT requests, optionally filtered by `state` or `requester` (Design
+         *     §7; FR-ACC-2). Platform-RBAC gated (`request:approve`) + audited.
+         */
+        get: operations["listJitRequests"];
+        put?: never;
+        /**
+         * Submit a JIT access request.
+         * @description Requests just-in-time access to a target node as a principal for a bounded
+         *     duration (Design §7; FR-ACC-2/3). Open to any authenticated principal — the
+         *     requester is recorded from the authenticated caller, never a body field. The
+         *     matching JIT policy's approval chain is snapshotted; a zero-level chain
+         *     auto-approves (but a Lock still denies on use). Audited.
+         */
+        post: operations["submitJitRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jit-requests/{jitRequestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a JIT request (admin). */
+        get: operations["getJitRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jit-requests/{jitRequestId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a JIT request level (admin).
+         * @description Approves the next level of a pending JIT request (Design §7; FR-ACC-3/4).
+         *     The approver can NEVER be the requester (self-approval impossible) and may
+         *     act at most once; when all levels are approved the grant clock starts.
+         *     Platform-RBAC gated (`request:approve`) + audited.
+         */
+        post: operations["approveJitRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jit-requests/{jitRequestId}/deny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deny a JIT request (admin).
+         * @description Denies a pending JIT request (terminal). The denier can never be the
+         *     requester. Platform-RBAC gated (`request:approve`) + audited.
+         */
+        post: operations["denyJitRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jit-requests/{jitRequestId}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke an active JIT grant (admin).
+         * @description Revokes an approved/active JIT grant (Design §7; FR-ACC-2). Also writes a
+         *     strict Lock on the grant's identity+node so a LIVE session tears down
+         *     (§8.4). Platform-RBAC gated (`request:approve`) + audited.
+         */
+        post: operations["revokeJitRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/breakglass/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List break-glass credentials (admin).
+         * @description Lists registered break-glass FIDO2 credentials (public metadata only)
+         *     (Design §7; FR-ACC-6). Platform-RBAC gated (`breakglass:manage`) + audited.
+         */
+        get: operations["listBreakglassCredentials"];
+        put?: never;
+        /**
+         * Register a break-glass FIDO2 key (admin).
+         * @description Registers a break-glass FIDO2 `sk-ecdsa` PUBLIC key (Design §7; FR-ACC-6).
+         *     Attestation is not required — an admin vouches for the key; only PUBLIC
+         *     material and the SHA-256 fingerprint are stored. Platform-RBAC gated
+         *     (`breakglass:manage`) + audited.
+         */
+        post: operations["registerBreakglassCredential"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/breakglass/credentials/{credentialId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke a break-glass credential (admin).
+         * @description Revokes (soft, `revoked_at`) a registered break-glass credential.
+         *     Idempotent. Platform-RBAC gated (`breakglass:manage`) + audited.
+         */
+        delete: operations["revokeBreakglassCredential"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/breakglass/offline-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List break-glass offline codes (admin).
+         * @description Lists issued offline-code metadata (NEVER the raw codes) (Design §7;
+         *     FR-ACC-6). Platform-RBAC gated (`breakglass:manage`) + audited.
+         */
+        get: operations["listBreakglassOfflineCodes"];
+        put?: never;
+        /**
+         * Issue a batch of break-glass offline codes (admin).
+         * @description Issues a batch of single-use break-glass offline codes (Design §7;
+         *     FR-ACC-6). The raw codes are returned exactly ONCE; only their SHA-256
+         *     hashes are stored. Platform-RBAC gated (`breakglass:manage`) + audited.
+         */
+        post: operations["issueBreakglassOfflineCodes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/breakglass/activations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List break-glass activations (admin).
+         * @description Lists break-glass activations, optionally filtered by `reviewStatus`
+         *     (Design §7; FR-ACC-6/FR-AUD-7). An unreviewed activation is a standing
+         *     signal. Platform-RBAC gated (`breakglass:manage`) + audited.
+         */
+        get: operations["listBreakglassActivations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/breakglass/activations/{activationId}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record the mandatory review of a break-glass activation (admin).
+         * @description Records the mandatory post-hoc review of a break-glass activation (Design
+         *     §7; FR-ACC-6/FR-AUD-7). Platform-RBAC gated (`breakglass:manage`) +
+         *     audited.
+         */
+        post: operations["reviewBreakglassActivation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List data-plane rules (admin).
+         * @description Lists data-plane RBAC rules (`config.dp_rule`, Design §6.1; FR-AUTHZ-1) —
+         *     the typed allow/deny grants the S5 engine evaluates. A committed deny that
+         *     must persist is a rule; "deny now and keep it" is a runtime `Lock`, not a
+         *     rule (Design §13). Cursor-paginated. Platform-RBAC gated (`rbac:read`).
+         */
+        get: operations["listRules"];
+        put?: never;
+        /**
+         * Create a data-plane rule (admin).
+         * @description Creates a data-plane rule. Invalid config (empty principals, ttl <= 0, an
+         *     unknown capability, a malformed selector, effect not allow|deny) is
+         *     rejected PRE-COMMIT (`422`, FR-API-5). The `origin` is server-set to `api`.
+         *     Platform-RBAC gated (`rbac:write`) + audited.
+         */
+        post: operations["createRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rules/{ruleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ruleId: components["parameters"]["RuleId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a data-plane rule (admin).
+         * @description Returns one rule by id. Platform-RBAC gated (`rbac:read`).
+         */
+        get: operations["getRule"];
+        /**
+         * Update a data-plane rule (admin).
+         * @description Replaces the mutable fields of a rule (the `name` is immutable). Invalid
+         *     config is rejected pre-commit (`422`). An optional `version` enforces
+         *     optimistic concurrency (a stale version is a `409`). Platform-RBAC gated
+         *     (`rbac:write`) + audited.
+         */
+        put: operations["updateRule"];
+        post?: never;
+        /**
+         * Delete a data-plane rule (admin).
+         * @description Deletes a rule (idempotent — `204` whether or not it existed).
+         *     Platform-RBAC gated (`rbac:write`) + audited.
+         */
+        delete: operations["deleteRule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List platform roles (admin).
+         * @description Lists platform-RBAC roles (`config.platform_role`; FR-PADM-1) — named sets
+         *     of the closed platform-permission vocabulary. Cursor-paginated.
+         *     Platform-RBAC gated (`rbac:read`).
+         */
+        get: operations["listRoles"];
+        put?: never;
+        /**
+         * Create a platform role (admin).
+         * @description Creates a platform role. A permission outside the closed vocabulary is
+         *     rejected pre-commit (`422`). Platform-RBAC gated (`rbac:write`) + audited.
+         */
+        post: operations["createRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/roles/{roleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: components["parameters"]["RoleId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a platform role (admin).
+         * @description Returns one role by id. Platform-RBAC gated (`rbac:read`).
+         */
+        get: operations["getRole"];
+        /**
+         * Update a platform role (admin).
+         * @description Replaces a role's permissions/description (the `name` is immutable). An
+         *     out-of-vocabulary permission is a `422`; a stale `version` is a `409`.
+         *     Platform-RBAC gated (`rbac:write`) + audited.
+         */
+        put: operations["updateRole"];
+        post?: never;
+        /**
+         * Delete a platform role (admin).
+         * @description Deletes a role and cascades its bindings (idempotent). Platform-RBAC gated
+         *     (`rbac:write`) + audited.
+         */
+        delete: operations["deleteRole"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/role-bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List role bindings (admin).
+         * @description Lists platform role bindings (`config.role_binding`; FR-PADM-2) — subject
+         *     (user|group) -> role, optionally scoped for `recording:replay/export`.
+         *     Cursor-paginated. Platform-RBAC gated (`rbac:read`).
+         */
+        get: operations["listRoleBindings"];
+        put?: never;
+        /**
+         * Create a role binding (admin).
+         * @description Binds a subject to a role. An unknown `roleId` or a malformed scope is a
+         *     `422`; a duplicate (role, subjectKind, subject) is a `409`. Platform-RBAC
+         *     gated (`rbac:write`) + audited.
+         */
+        post: operations["createRoleBinding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/role-bindings/{bindingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bindingId: components["parameters"]["BindingId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a role binding (admin).
+         * @description Returns one role binding by id. Platform-RBAC gated (`rbac:read`).
+         */
+        get: operations["getRoleBinding"];
+        /**
+         * Update a role binding (admin).
+         * @description Replaces a binding's scope (the subject and role are immutable — rebind by
+         *     delete + create). A stale `version` is a `409`. Platform-RBAC gated
+         *     (`rbac:write`) + audited.
+         */
+        put: operations["updateRoleBinding"];
+        post?: never;
+        /**
+         * Delete a role binding (admin).
+         * @description Deletes a role binding (idempotent). Platform-RBAC gated (`rbac:write`) + audited.
+         */
+        delete: operations["deleteRoleBinding"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List certificate authorities (admin).
+         * @description Lists CA configurations (`config.ca_config`; FR-CA-1/4/7) — per-CA
+         *     (user|session|host) backend + key REFERENCE and rotation state. NEVER
+         *     exposes private key material (Design §13). Cursor-paginated. Platform-RBAC
+         *     gated (`ca:manage`).
+         */
+        get: operations["listCas"];
+        put?: never;
+        /**
+         * Create a CA configuration (admin).
+         * @description Registers a CA configuration. An algorithm/backend mismatch (e.g.
+         *     `ed25519` on `azure_keyvault`, which has no Ed25519 — Design D6) or a
+         *     `keyReference` that looks like private material is rejected pre-commit
+         *     (`422`, FR-API-5). The response NEVER contains private key material.
+         *     Platform-RBAC gated (`ca:manage`) + audited.
+         */
+        post: operations["createCa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cas/{caId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caId: components["parameters"]["CaId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a CA configuration (admin).
+         * @description Returns one CA configuration by id (public/config only, NEVER private
+         *     material). Platform-RBAC gated (`ca:manage`).
+         */
+        get: operations["getCa"];
+        /**
+         * Update a CA configuration (admin).
+         * @description Updates a CA configuration's backend/keyReference/algorithm (the `name` and
+         *     `caKind` are immutable; `rotationState` is managed by the rotation state
+         *     machine, not editable here — use rotate). An algorithm/backend mismatch is
+         *     a `422`; a stale `version` is a `409`. Platform-RBAC gated (`ca:manage`) +
+         *     audited.
+         */
+        put: operations["updateCa"];
+        post?: never;
+        /**
+         * Delete a CA configuration (admin).
+         * @description Deletes a CA configuration (idempotent). Deleting the sole `active` CA of a
+         *     kind is rejected (`409`) — a kind must always retain a signer. Platform-RBAC
+         *     gated (`ca:manage`) + audited.
+         */
+        delete: operations["deleteCa"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cas/{caId}/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caId: components["parameters"]["CaId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate a CA (admin).
+         * @description Triggers key rotation for the CA kind of this configuration (FR-CA-7): a new
+         *     key is provisioned in the same backend and becomes `incoming`, the current
+         *     `active` row moves to `outgoing` (both trusted during the overlap window),
+         *     and the new key is promoted to `active`. The outgoing key still verifies
+         *     existing certs until it expires. NEVER returns private material. Platform-RBAC
+         *     gated (`ca:rotate`) + audited.
+         */
+        post: operations["rotateCa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/service-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List service accounts (admin).
+         * @description Lists machine-consumer definitions (`config.service_account`; FR-AUTH-12).
+         *     Issued credentials are RUNTIME and live under
+         *     `/v1/service-accounts/{id}/credentials`; this resource is the DEFINITION and
+         *     NEVER returns a secret. Cursor-paginated. Platform-RBAC gated (`user:manage`).
+         */
+        get: operations["listServiceAccounts"];
+        put?: never;
+        /**
+         * Create a service account (admin).
+         * @description Creates a machine-consumer definition. A `keyReference` that looks like
+         *     private material, or a non-positive `tokenTtlSeconds`, is a `422`. The
+         *     response NEVER contains a secret. Platform-RBAC gated (`user:manage`) +
+         *     audited.
+         */
+        post: operations["createServiceAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/service-accounts/{serviceAccountId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceAccountId: components["parameters"]["ServiceAccountId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a service account (admin).
+         * @description Returns one service-account definition by id (never a secret). Platform-RBAC gated (`user:manage`).
+         */
+        get: operations["getServiceAccount"];
+        /**
+         * Update a service account (admin).
+         * @description Replaces a service account's mutable fields (the `name` is immutable). A bad
+         *     `keyReference`/`tokenTtlSeconds` is a `422`; a stale `version` is a `409`.
+         *     Platform-RBAC gated (`user:manage`) + audited.
+         */
+        put: operations["updateServiceAccount"];
+        post?: never;
+        /**
+         * Delete a service account (admin).
+         * @description Deletes a service-account definition (idempotent). Issued runtime credentials
+         *     are revoked separately. Platform-RBAC gated (`user:manage`) + audited.
+         */
+        delete: operations["deleteServiceAccount"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/node-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List node policies (admin).
+         * @description Lists node policies (`config.node_policy`; Design §12A) — desired labels,
+         *     connector kind, and declared host-trust references. Cursor-paginated.
+         *     Platform-RBAC gated (`settings:write`).
+         */
+        get: operations["listNodePolicies"];
+        put?: never;
+        /**
+         * Create a node policy (admin).
+         * @description Creates a node policy. A bad connector kind, a non-object `desiredLabels`, or
+         *     a host-trust ref that looks like private material is a `422`. Platform-RBAC
+         *     gated (`settings:write`) + audited.
+         */
+        post: operations["createNodePolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/node-policies/{nodePolicyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nodePolicyId: components["parameters"]["NodePolicyId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a node policy (admin).
+         * @description Returns one node policy by id. Platform-RBAC gated (`settings:write`).
+         */
+        get: operations["getNodePolicy"];
+        /**
+         * Update a node policy (admin).
+         * @description Replaces a node policy's mutable fields (the `name` is immutable). A stale
+         *     `version` is a `409`. Platform-RBAC gated (`settings:write`) + audited.
+         */
+        put: operations["updateNodePolicy"];
+        post?: never;
+        /**
+         * Delete a node policy (admin).
+         * @description Deletes a node policy (idempotent). Platform-RBAC gated (`settings:write`) + audited.
+         */
+        delete: operations["deleteNodePolicy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/capability-defs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List capability definitions (admin).
+         * @description Lists the requestable-capability catalogue (`config.capability_def`; Design
+         *     §12A / D14). Cursor-paginated. Platform-RBAC gated (`settings:write`).
+         */
+        get: operations["listCapabilityDefs"];
+        put?: never;
+        /**
+         * Create a capability definition (admin).
+         * @description Adds a capability to the catalogue. A `name` outside the closed capability
+         *     set is a `422`; a duplicate is a `409`. Platform-RBAC gated (`settings:write`)
+         *     + audited.
+         */
+        post: operations["createCapabilityDef"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/capability-defs/{capabilityDefId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                capabilityDefId: components["parameters"]["CapabilityDefId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a capability definition (admin).
+         * @description Returns one capability definition by id. Platform-RBAC gated (`settings:write`).
+         */
+        get: operations["getCapabilityDef"];
+        /**
+         * Update a capability definition (admin).
+         * @description Updates a capability definition's description (the `name` is immutable). A
+         *     stale `version` is a `409`. Platform-RBAC gated (`settings:write`) + audited.
+         */
+        put: operations["updateCapabilityDef"];
+        post?: never;
+        /**
+         * Delete a capability definition (admin).
+         * @description Deletes a capability definition (idempotent). Platform-RBAC gated (`settings:write`) + audited.
+         */
+        delete: operations["deleteCapabilityDef"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jit-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List JIT policies (admin).
+         * @description Lists JIT-requestable policies (`config.jit_policy`; FR-ACC-3) — requestable
+         *     targets, capabilities, max TTL, and the 0-3 level approval chain.
+         *     Cursor-paginated. Platform-RBAC gated (`settings:write`).
+         */
+        get: operations["listJitPolicies"];
+        put?: never;
+        /**
+         * Create a JIT policy (admin).
+         * @description Creates a JIT policy. `maxTtlSeconds <= 0`, an unknown capability, an
+         *     approval chain longer than 3, or a malformed level is rejected pre-commit
+         *     (`422`). Platform-RBAC gated (`settings:write`) + audited.
+         */
+        post: operations["createJitPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jit-policies/{jitPolicyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jitPolicyId: components["parameters"]["JitPolicyId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a JIT policy (admin).
+         * @description Returns one JIT policy by id. Platform-RBAC gated (`settings:write`).
+         */
+        get: operations["getJitPolicy"];
+        /**
+         * Update a JIT policy (admin).
+         * @description Replaces a JIT policy's mutable fields (the `name` is immutable). Invalid
+         *     config is a `422`; a stale `version` is a `409`. Platform-RBAC gated
+         *     (`settings:write`) + audited.
+         */
+        put: operations["updateJitPolicy"];
+        post?: never;
+        /**
+         * Delete a JIT policy (admin).
+         * @description Deletes a JIT policy (idempotent). Platform-RBAC gated (`settings:write`) + audited.
+         */
+        delete: operations["deleteJitPolicy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/breakglass-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List break-glass policies (admin).
+         * @description Lists break-glass policies (`config.breakglass_policy`; FR-ACC-6) —
+         *     recording-strict, alert target, review-required, and the IdP-independent
+         *     auth path. Cursor-paginated. Platform-RBAC gated (`breakglass:manage`).
+         */
+        get: operations["listBreakglassPolicies"];
+        put?: never;
+        /**
+         * Create a break-glass policy (admin).
+         * @description Creates a break-glass policy. An empty `alertTarget` or a bad `authPath`
+         *     (not fido2|offline_code) is a `422`. Platform-RBAC gated (`breakglass:manage`)
+         *     + audited.
+         */
+        post: operations["createBreakglassPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/breakglass-policies/{breakglassPolicyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                breakglassPolicyId: components["parameters"]["BreakglassPolicyId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a break-glass policy (admin).
+         * @description Returns one break-glass policy by id. Platform-RBAC gated (`breakglass:manage`).
+         */
+        get: operations["getBreakglassPolicy"];
+        /**
+         * Update a break-glass policy (admin).
+         * @description Replaces a break-glass policy's mutable fields (the `name` is immutable). A
+         *     bad `authPath`/empty `alertTarget` is a `422`; a stale `version` is a `409`.
+         *     Platform-RBAC gated (`breakglass:manage`) + audited.
+         */
+        put: operations["updateBreakglassPolicy"];
+        post?: never;
+        /**
+         * Delete a break-glass policy (admin).
+         * @description Deletes a break-glass policy (idempotent). Platform-RBAC gated (`breakglass:manage`) + audited.
+         */
+        delete: operations["deleteBreakglassPolicy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List SSH sessions (admin).
+         * @description Lists SSH sessions (`runtime.ssh_session`; Design §12A) with their decision
+         *     snapshot (identity, node, principal, access model, capabilities, grant
+         *     expiry). Optional filters narrow by identity, node, access model, and
+         *     active-only. Cursor-paginated. Platform-RBAC gated (`audit:read`).
+         */
+        get: operations["listSessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sessions/{sessionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: components["parameters"]["SessionId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get an SSH session (admin).
+         * @description Returns one session by id. Platform-RBAC gated (`audit:read`).
+         */
+        get: operations["getSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sessions/{sessionId}/terminate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: components["parameters"]["SessionId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Terminate an SSH session (admin).
+         * @description Tears down a live session by pushing a top-tier `Lock` (Design §8.3/§8.4)
+         *     scoped to the session's subject identity, reusing the S10 teardown path — a
+         *     deny that wins and is actively pushed to every Gateway (fail-closed). Because
+         *     the wire `Lock` selector has no per-session facet, the teardown is
+         *     identity-scoped (it also affects that identity's other live sessions); it is
+         *     bounded by a short TTL so the identity may immediately reconnect under an
+         *     unchanged policy. Idempotent. Platform-RBAC gated (`lock:write`) + audited.
+         */
+        post: operations["terminateSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recordings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List session recordings (admin).
+         * @description Lists session recording metadata (`runtime.recording_ref`; Design §12).
+         *     NEVER returns recording bytes — replay/export issue short-lived signed URLs.
+         *     Optional filters narrow by session, node, and identity. Cursor-paginated.
+         *     Platform-RBAC gated (`recording:replay`).
+         */
+        get: operations["listRecordings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recordings/{recordingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: components["parameters"]["RecordingId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get session recording metadata (admin).
+         * @description Returns one recording's metadata (never bytes). Platform-RBAC gated
+         *     (`recording:replay`).
+         */
+        get: operations["getRecording"];
+        put?: never;
+        post?: never;
+        /**
+         * Governance-delete a recording (admin, privileged).
+         * @description Governance-mode erasure escape hatch (Design §12.2/§12.3, FR-AUD-3/6): a
+         *     specifically-privileged, audited role deletes the encrypted recording object
+         *     and marks the metadata pruned. Platform-RBAC gated (`recording:delete`) +
+         *     audited (FR-PADM-3). Refused (`409`) for a **compliance**-mode recording
+         *     (truly un-deletable, object-lock) or one under **legal hold**. Idempotent —
+         *     `204` whether or not the object was still present.
+         */
+        delete: operations["deleteRecording"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recordings/{recordingId}/replay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: components["parameters"]["RecordingId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue a replay signed URL (admin).
+         * @description Issues a short-lived, single-object SIGNED URL for replaying a recording
+         *     (Design §12.2/§18) — bytes NEVER proxy through the CP and the object stays
+         *     customer-key encrypted (the CP cannot decrypt); the access is itself audited
+         *     (FR-AUD-5/FR-PADM-3). Platform-RBAC gated (`recording:replay`), scopable by
+         *     node-label/user/time (FR-PADM-2).
+         */
+        post: operations["replayRecording"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recordings/{recordingId}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: components["parameters"]["RecordingId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue an export signed URL (admin).
+         * @description Issues a short-lived, single-object SIGNED URL for exporting a recording
+         *     (Design §12.2/§18) — bytes NEVER proxy through the CP and the object stays
+         *     customer-key encrypted (the CP cannot decrypt); itself audited (FR-AUD-5).
+         *     Platform-RBAC gated (`recording:export`), scopable (FR-PADM-2).
+         */
+        post: operations["exportRecording"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recordings/{recordingId}/legal-hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: components["parameters"]["RecordingId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set or release a recording's legal hold (admin, privileged).
+         * @description Places or releases a legal hold on a recording (Design §12.3, FR-AUD-6). A
+         *     held recording is exempt from retention pruning AND governance delete in
+         *     either WORM mode. Platform-RBAC gated (`recording:delete`) + audited
+         *     (FR-PADM-3). Idempotent by desired state.
+         */
+        put: operations["setRecordingLegalHold"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/audit-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search the correlated audit stream (admin).
+         * @description Searches the correlated audit stream (`runtime.audit_event`; Design §12,
+         *     FR-AUD-8/9) — one append-only stream for SSH-session and web/admin events,
+         *     correlated by id, newest-first. Search dimensions (FR-AUD-8): identity
+         *     (`actor`), subject, action, outcome, node (`nodeId`) and node label
+         *     (`nodeLabel`), session, source IP, capability, access model, and a time
+         *     range; `correlationId` reconstructs one full path (approve → connect → run →
+         *     replay, FR-AUD-9). Cursor-paginated. Read-only — a search never mutates the
+         *     append-only stream and the hash chain stays verifiable. Platform-RBAC gated
+         *     (`audit:read`); results are additionally filtered to the caller's RBAC scope
+         *     (a node-label/user/time-scoped `audit:read` grant returns only in-scope
+         *     events; an unscoped grant sees all).
+         */
+        get: operations["searchAuditEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/audit-events/{auditEventId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                auditEventId: components["parameters"]["AuditEventId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get one audit event (admin) — FROZEN, 501 until Session 18.
+         * @description Returns one audit event by id. Platform-RBAC gated (`audit:read`). FROZEN
+         *     CONTRACT: returns `501` until Session 18.
+         */
+        get: operations["getAuditEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -120,6 +1569,1123 @@ export interface components {
                 agentGatewayWire: components["schemas"]["ProtocolVersionRange"];
             };
         };
+        /**
+         * OAuth Token Request
+         * @description Client-credentials token request (Design §5.6). Sent as
+         *     `application/x-www-form-urlencoded`. Client authentication is by
+         *     `client_assertion` (private_key_jwt) or by the mTLS client certificate;
+         *     a static `client_secret` is accepted but discouraged.
+         */
+        TokenRequest: {
+            /** @description Must be `client_credentials`. */
+            grant_type: string;
+            client_id?: string;
+            /** @description For private_key_jwt: urn:ietf:params:oauth:client-assertion-type:jwt-bearer. */
+            client_assertion_type?: string;
+            /** @description The signed JWT client assertion (RFC 7523). */
+            client_assertion?: string;
+            /** @description Discouraged static secret (only if the SA uses client_secret). */
+            client_secret?: string;
+            scope?: string;
+        };
+        /** OAuth Token Response */
+        TokenResponse: {
+            /** @description The short-lived CP-signed bearer token. */
+            access_token: string;
+            /** @description Always `Bearer`. */
+            token_type: string;
+            /**
+             * Format: int64
+             * @description Token lifetime in seconds.
+             */
+            expires_in: number;
+            scope?: string;
+        };
+        /** Issue OTP Request */
+        IssueOtpRequest: {
+            /** @description The identity the OTP authenticates (taken from the record, never client input at validation). */
+            identity: string;
+            allowedPrincipals: string[];
+            /** @description Optional source-CIDR binding (deny-only reducer). */
+            sourceCidr?: string;
+            /**
+             * Format: int32
+             * @description OTP lifetime (60–300s); defaults to the operator setting.
+             */
+            ttlSeconds?: number;
+        };
+        /** Issued OTP */
+        IssuedOtp: {
+            /** Format: uuid */
+            otpId: string;
+            /** @description The raw OTP, returned ONCE for out-of-band delivery; only its hash is stored. */
+            otp: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        /** Create Pin Request */
+        CreatePinRequest: {
+            /** @description The pinned public-key fingerprint (SHA256:...). */
+            fingerprint: string;
+            identity: string;
+            /** @description Source-CIDR binding (deny-only reducer, FR-AUTH-15). */
+            sourceCidr?: string;
+            principals: string[];
+            /**
+             * Format: int64
+             * @description Pin lifetime; capped at the authorization TTL (FR-AUTH-10).
+             */
+            ttlSeconds: number;
+        };
+        /** Pin */
+        PinResource: {
+            /** Format: uuid */
+            id: string;
+            fingerprint: string;
+            identity: string;
+            sourceCidr?: string;
+            principals: string[];
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: date-time */
+            revokedAt?: string;
+        };
+        /** Pin List */
+        PinList: {
+            pins: components["schemas"]["PinResource"][];
+        };
+        /** Issue Service-Account Credential Request */
+        IssueServiceAccountCredentialRequest: {
+            /** @enum {string} */
+            credentialType: "private_key_jwt" | "mtls" | "client_secret";
+            /** @description For private_key_jwt — the client's public key (PEM). Public material only. */
+            publicKeyPem?: string;
+            /** @description For private_key_jwt — a JWKS URI reference (alternative to publicKeyPem). */
+            jwksUri?: string;
+            /** @description For mtls — the client certificate SHA-256 fingerprint. */
+            certificateFingerprint?: string;
+            /**
+             * Format: int64
+             * @description Credential validity; null = non-expiring until revoked.
+             */
+            ttlSeconds?: number;
+        };
+        /** Service-Account Credential */
+        ServiceAccountCredentialResource: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            serviceAccountId: string;
+            credentialType: string;
+            fingerprint?: string;
+            /** @description For client_secret — the raw secret, returned ONCE; only its hash is stored. */
+            clientSecret?: string;
+            status: string;
+            /** Format: date-time */
+            issuedAt: string;
+            /** Format: date-time */
+            notAfter?: string;
+        };
+        /** Begin Device Flow Request */
+        BeginDeviceFlowRequest: {
+            /** @description The SSH source IP to bind for anti-phishing correlation (§5.2). */
+            sourceIp?: string;
+            /** @description An opaque 1:1 device-code↔connection binding value. */
+            connectionBinding?: string;
+        };
+        /** Device Flow */
+        DeviceFlowResource: {
+            /** Format: uuid */
+            deviceFlowId: string;
+            /** @description The short code the user enters at the verification page. */
+            userCode: string;
+            /** @description The CP-hosted verification page URL. */
+            verificationUri: string;
+            /** @description Verification URI with the user code embedded (convenience). */
+            verificationUriComplete?: string;
+            /** @description The opaque device code the caller polls with (its own credential). */
+            deviceCode: string;
+            /**
+             * Format: int32
+             * @description Minimum poll interval in seconds.
+             */
+            interval: number;
+            /**
+             * Format: int64
+             * @description Seconds until the flow expires.
+             */
+            expiresIn: number;
+        };
+        /** Poll Device Flow Request */
+        PollDeviceFlowRequest: {
+            deviceCode: string;
+        };
+        /** Device Flow Status */
+        DeviceFlowStatus: {
+            /** @enum {string} */
+            status: "pending" | "authorized" | "denied" | "expired";
+            /** @description The resolved identity, present when status=authorized. */
+            identity?: string;
+            /** @description Whether the approving browser source correlated with the SSH source (§5.2). */
+            sourceContextMatch?: boolean;
+        };
+        /**
+         * Lock Target
+         * @description What the lock matches (S5 LockMatching facets; OR-matched). At least one
+         *     facet must be non-empty, OR `all` must be true — a global lock is never
+         *     implicit (ingest rejects an empty target).
+         */
+        LockTarget: {
+            /** @description Resolved subject identities to deny. */
+            identities?: string[];
+            /** @description SSO/OIDC groups to deny (membership match). */
+            groups?: string[];
+            /** @description Target node ids to deny. */
+            nodeIds?: string[];
+            /** @description Linux logins (principals) to deny. */
+            principals?: string[];
+            /** @description Node labels ("key=value") to deny. */
+            nodeLabels?: string[];
+            /** @description An explicit fleet-wide lock (deny everything). Required for a target with no other facet. */
+            all?: boolean;
+        };
+        /** Create Lock Request */
+        CreateLockRequest: {
+            target: components["schemas"]["LockTarget"];
+            /** @description Operator/audit reason (mandatory). Never disclosed to the SSH user (§7.1). */
+            reason: string;
+            /**
+             * Format: int64
+             * @description Optional lock lifetime in seconds; omitted or null = no expiry (indefinite until released).
+             */
+            ttlSeconds?: number;
+        };
+        /** Lock */
+        LockResource: {
+            /** Format: uuid */
+            id: string;
+            target: components["schemas"]["LockTarget"];
+            reason: string;
+            /**
+             * Format: date-time
+             * @description Absolute expiry; absent when the lock has no TTL.
+             */
+            expiresAt?: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description The admin identity that created the lock. */
+            createdBy?: string;
+        };
+        /** Lock List */
+        LockList: {
+            locks: components["schemas"]["LockResource"][];
+        };
+        /**
+         * Issue Join Token Request
+         * @description Request to mint a single-use agent join token bound to a node.
+         */
+        IssueJoinTokenRequest: {
+            /** @description The stable node identity the token authorizes an agent to join as (FR-JOIN-6). The token is scoped to exactly this node. */
+            nodeName: string;
+            /**
+             * Format: int32
+             * @description Optional TTL override (seconds). Omitted uses the configured default; the value is clamped to the configured maximum. Join tokens are short-lived by design.
+             */
+            ttlSeconds?: number;
+        };
+        /**
+         * Issued Join Token
+         * @description A freshly issued join token. The `token` field is the raw single-use bearer value and is returned exactly ONCE; only its hash is stored.
+         */
+        IssuedJoinToken: {
+            /** Format: uuid */
+            id: string;
+            /** @description The raw single-use join token. Shown once; never retrievable again. */
+            token: string;
+            nodeName: string;
+            /** @enum {string} */
+            joinMethod: "token";
+            singleUse: boolean;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        /**
+         * Join Token
+         * @description Join-token metadata (never the raw token).
+         */
+        JoinTokenResource: {
+            /** Format: uuid */
+            id: string;
+            nodeName: string;
+            /** @enum {string} */
+            joinMethod: "token";
+            singleUse: boolean;
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description The admin identity that issued the token. */
+            createdBy?: string;
+        };
+        /** Join Token List */
+        JoinTokenList: {
+            joinTokens: components["schemas"]["JoinTokenResource"][];
+        };
+        /**
+         * Register Node Request
+         * @description Enrol an agentless node. `address` (host:port) is required; at least one of
+         *     `hostCertificate` / `pinnedHostKey` is required (host-identity anchor — no
+         *     TOFU, §9.3).
+         */
+        RegisterNodeRequest: {
+            /** @description The node's stable, unique human name (the enrollment key + the SSH addressing name). */
+            name: string;
+            /** @description The node sshd dial address, `host:port` (port defaults to 22 if omitted). */
+            address: string;
+            /** @description Inventory labels ("key=value") used by data-plane rule/lock node selectors. */
+            labels?: {
+                [key: string]: string;
+            };
+            /** @description The node's host-CA-signed OpenSSH host certificate line (the primary host-identity anchor). */
+            hostCertificate?: string;
+            /** @description An explicitly pinned OpenSSH host public-key line (the fallback anchor when the node presents a plain host key). */
+            pinnedHostKey?: string;
+            /** @description Optional NodePolicy snapshot reference. */
+            nodePolicyName?: string;
+        };
+        /** Quarantine Node Request */
+        QuarantineNodeRequest: {
+            /** @description Operator/audit reason (mandatory). Never disclosed to the SSH user (§7.1). */
+            reason: string;
+            /**
+             * @description How existing sessions are handled — `kill` (torn down at once) or `drain` (finish; no new channels).
+             * @default kill
+             * @enum {string}
+             */
+            existingSessions: "kill" | "drain";
+            /**
+             * Format: int64
+             * @description Optional quarantine-lock lifetime in seconds; omitted/null = indefinite until released.
+             */
+            ttlSeconds?: number;
+        };
+        /** Node */
+        NodeResource: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @enum {string} */
+            connectorKind: "agent" | "agentless";
+            /** @enum {string} */
+            status: "pending" | "active" | "quarantined" | "removed";
+            /** @enum {string} */
+            health: "unknown" | "healthy" | "unhealthy" | "unreachable";
+            address?: string;
+            labels?: {
+                [key: string]: string;
+            };
+            /** @description The Gateway currently owning the node's agent control channel (agent model); absent otherwise. */
+            owningGateway?: string;
+            statusReason?: string;
+            statusChangedBy?: string;
+            /** Format: date-time */
+            statusChangedAt?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        /** Node List */
+        NodeList: {
+            nodes: components["schemas"]["NodeResource"][];
+        };
+        /**
+         * JIT Request Submission
+         * @description A just-in-time access request. The requester is the authenticated caller, never a field.
+         */
+        JitRequestSubmission: {
+            /**
+             * Format: uuid
+             * @description The target node to request JIT access to.
+             */
+            targetNodeId: string;
+            /** @description The Linux login requested (must be within what the JIT policy allows). */
+            principal: string;
+            /** @description Requested capabilities (narrowed to the policy's set; default = the policy set). */
+            capabilities?: string[];
+            /** @description The justification for the request (audited). */
+            reason: string;
+        };
+        /**
+         * JIT Decision Request
+         * @description The optional reason attached to an approve/deny/revoke action.
+         */
+        JitDecisionRequest: {
+            reason?: string;
+        };
+        /** JIT Approval Level */
+        JitApprovalLevel: {
+            /** @enum {string} */
+            kind?: "email" | "oidc_group";
+            value?: string;
+        };
+        /** JIT Approval Entry */
+        JitApproval: {
+            approver?: string;
+            /** Format: int32 */
+            level?: number;
+            decision?: string;
+            reason?: string;
+            at?: string;
+        };
+        /** JIT Request */
+        JitRequestResource: {
+            /** Format: uuid */
+            id: string;
+            requester: string;
+            /** Format: uuid */
+            targetNodeId?: string;
+            targetNodeName?: string;
+            principal: string;
+            capabilities?: string[];
+            reason: string;
+            /** @description REQUESTED | PENDING_APPROVAL | APPROVED | DENIED | EXPIRED | ACTIVE | REVOKED. */
+            state: string;
+            jitPolicyName?: string;
+            approvalChain?: components["schemas"]["JitApprovalLevel"][];
+            approvals?: components["schemas"]["JitApproval"][];
+            /** Format: date-time */
+            approvalDeadline?: string;
+            /** Format: date-time */
+            grantExpiresAt?: string;
+            /** Format: date-time */
+            requestedAt: string;
+            /** Format: date-time */
+            decidedAt?: string;
+            decidedBy?: string;
+        };
+        /** JIT Request List */
+        JitRequestList: {
+            jitRequests: components["schemas"]["JitRequestResource"][];
+        };
+        /**
+         * Register Break-glass Credential Request
+         * @description Registers a break-glass FIDO2 sk-ecdsa PUBLIC key. Public material only.
+         */
+        RegisterBreakglassCredentialRequest: {
+            /**
+             * Format: byte
+             * @description The OpenSSH sk-ecdsa-sha2-nistp256 wire pubkey blob (base64). PUBLIC.
+             */
+            publicKey: string;
+            /** @description The break-glass operator identity this key resolves to. */
+            identity: string;
+            allowedPrincipals: string[];
+            /** @description Optional node scope (a fleet credential omits it). */
+            nodeIds?: string[];
+            /**
+             * Format: date-time
+             * @description Optional expiry (a hardware token is durable; omit for none).
+             */
+            expiresAt?: string;
+        };
+        /** Break-glass Credential */
+        BreakglassCredentialResource: {
+            /** Format: uuid */
+            id: string;
+            /** @description The OpenSSH SHA256 fingerprint of the registered key. */
+            keyFingerprint: string;
+            skApplication?: string;
+            identity: string;
+            allowedPrincipals: string[];
+            nodeIds?: string[];
+            /** Format: date-time */
+            expiresAt?: string;
+            /** Format: date-time */
+            revokedAt?: string;
+            createdBy?: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** Break-glass Credential List */
+        BreakglassCredentialList: {
+            credentials: components["schemas"]["BreakglassCredentialResource"][];
+        };
+        /** Issue Break-glass Offline Codes Request */
+        IssueBreakglassOfflineCodesRequest: {
+            identity: string;
+            allowedPrincipals: string[];
+            nodeIds?: string[];
+            /** @description Optional source-CIDR binding (deny-only reducer). */
+            sourceCidr?: string;
+            /**
+             * Format: int32
+             * @description How many codes to issue (default 10).
+             */
+            count?: number;
+            /**
+             * Format: int64
+             * @description Code lifetime (default 90d).
+             */
+            ttlSeconds?: number;
+        };
+        /** Issued Break-glass Offline Codes */
+        IssuedBreakglassOfflineCodes: {
+            ids: string[];
+            /** @description The raw offline codes, returned ONCE; only their hashes are stored. */
+            codes: string[];
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        /**
+         * Break-glass Offline Code
+         * @description Offline-code metadata (never the raw code).
+         */
+        BreakglassOfflineCodeResource: {
+            /** Format: uuid */
+            id: string;
+            identity: string;
+            allowedPrincipals?: string[];
+            sourceCidr?: string;
+            /** Format: date-time */
+            expiresAt: string;
+            used: boolean;
+            /** Format: date-time */
+            usedAt?: string;
+            /** Format: date-time */
+            revokedAt?: string;
+            createdBy?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        /** Break-glass Offline Code List */
+        BreakglassOfflineCodeList: {
+            offlineCodes: components["schemas"]["BreakglassOfflineCodeResource"][];
+        };
+        /** Break-glass Activation */
+        BreakglassActivationResource: {
+            /** Format: uuid */
+            id: string;
+            identity?: string;
+            principal: string;
+            reason: string;
+            alertRef?: string;
+            breakglassPolicyName?: string;
+            /** @enum {string} */
+            reviewStatus: "pending" | "reviewed";
+            reviewer?: string;
+            sourceIp?: string;
+            /** Format: uuid */
+            targetNodeId?: string;
+            credentialRef?: string;
+            /** Format: date-time */
+            activatedAt: string;
+            /** Format: date-time */
+            reviewedAt?: string;
+        };
+        /** Break-glass Activation List */
+        BreakglassActivationList: {
+            activations: components["schemas"]["BreakglassActivationResource"][];
+        };
+        /** Review Break-glass Activation Request */
+        ReviewBreakglassActivationRequest: {
+            note?: string;
+        };
+        /**
+         * Config Provenance
+         * @description Provenance of a config row (Design §13). `api`/`ui` mark which admin surface
+         *     last wrote it; `default` is a seeded/cold-start default. Read-only.
+         * @enum {string}
+         */
+        Origin: "api" | "ui" | "default";
+        /**
+         * SSH Capability
+         * @description A policy-gated SSH channel capability (Design D14).
+         * @enum {string}
+         */
+        Capability: "shell" | "exec" | "sftp" | "scp" | "port_forward_local" | "port_forward_remote" | "agent_forward" | "x11";
+        /**
+         * Platform Permission
+         * @description A granular platform-RBAC permission from the closed vocabulary (FR-PADM-1).
+         * @enum {string}
+         */
+        PlatformPermission: "rbac:read" | "rbac:write" | "node:enroll" | "node:quarantine" | "node:remove" | "ca:manage" | "ca:rotate" | "request:approve" | "recording:replay" | "recording:export" | "recording:delete" | "audit:read" | "user:manage" | "settings:write" | "lock:read" | "lock:write" | "breakglass:manage";
+        /**
+         * Rule Effect
+         * @enum {string}
+         */
+        Effect: "allow" | "deny";
+        /**
+         * Connector Kind
+         * @enum {string}
+         */
+        ConnectorKind: "agent" | "agentless";
+        /**
+         * Binding Subject Kind
+         * @enum {string}
+         */
+        SubjectKind: "user" | "group";
+        /**
+         * CA Kind
+         * @enum {string}
+         */
+        CaKind: "user" | "session" | "host";
+        /**
+         * CA Backend
+         * @enum {string}
+         */
+        CaBackend: "local" | "aws_kms" | "azure_keyvault" | "vault";
+        /**
+         * CA Algorithm
+         * @enum {string}
+         */
+        CaAlgorithm: "ecdsa-p256" | "ecdsa-p384" | "ed25519" | "rsa-2048" | "rsa-4096";
+        /**
+         * CA Rotation State
+         * @description Rotation-state-machine position (managed server-side; read-only over the API).
+         * @enum {string}
+         */
+        CaRotationState: "incoming" | "active" | "outgoing" | "expired";
+        /**
+         * Service-Account Auth Method
+         * @enum {string}
+         */
+        ServiceAccountAuthMethod: "private_key_jwt" | "mtls" | "client_secret";
+        /**
+         * Break-glass Auth Path
+         * @enum {string}
+         */
+        BreakglassAuthPath: "fido2" | "offline_code";
+        /**
+         * Access Model
+         * @enum {string}
+         */
+        AccessModel: "standing" | "jit" | "breakglass";
+        /**
+         * Selector
+         * @description A shape-validated selector object (stored as jsonb).
+         */
+        Selector: {
+            [key: string]: unknown;
+        };
+        /**
+         * Label Map
+         * @description A string->string label map.
+         */
+        LabelMap: {
+            [key: string]: string;
+        };
+        /** Data-Plane Rule */
+        RuleResource: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            identitySelector: components["schemas"]["Selector"];
+            nodeLabelSelector: components["schemas"]["Selector"];
+            sourceIpCondition?: components["schemas"]["Selector"];
+            principals: string[];
+            /** Format: int32 */
+            ttlSeconds: number;
+            capabilities: components["schemas"]["Capability"][];
+            effect: components["schemas"]["Effect"];
+            origin: components["schemas"]["Origin"];
+            /** Format: int64 */
+            version: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        /** Create Rule Request */
+        CreateRuleRequest: {
+            name: string;
+            identitySelector: components["schemas"]["Selector"];
+            nodeLabelSelector: components["schemas"]["Selector"];
+            sourceIpCondition?: components["schemas"]["Selector"];
+            principals: string[];
+            /** Format: int32 */
+            ttlSeconds: number;
+            capabilities?: components["schemas"]["Capability"][];
+            effect: components["schemas"]["Effect"];
+        };
+        /** Update Rule Request */
+        UpdateRuleRequest: {
+            identitySelector: components["schemas"]["Selector"];
+            nodeLabelSelector: components["schemas"]["Selector"];
+            sourceIpCondition?: components["schemas"]["Selector"];
+            principals: string[];
+            /** Format: int32 */
+            ttlSeconds: number;
+            capabilities?: components["schemas"]["Capability"][];
+            effect: components["schemas"]["Effect"];
+            /**
+             * Format: int64
+             * @description The current resource version; required and must match (optimistic concurrency — no silent lost update).
+             */
+            version: number;
+        };
+        /** Rule Page */
+        RulePage: {
+            items: components["schemas"]["RuleResource"][];
+            /** @description Cursor for the next page; absent on the last page. */
+            nextCursor?: string;
+        };
+        /** Platform Role */
+        RoleResource: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            permissions: components["schemas"]["PlatformPermission"][];
+            description?: string;
+            origin: components["schemas"]["Origin"];
+            /** Format: int64 */
+            version: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        /** Create Role Request */
+        CreateRoleRequest: {
+            name: string;
+            permissions: components["schemas"]["PlatformPermission"][];
+            description?: string;
+        };
+        /** Update Role Request */
+        UpdateRoleRequest: {
+            permissions: components["schemas"]["PlatformPermission"][];
+            description?: string;
+            /** Format: int64 */
+            version: number;
+        };
+        /** Role Page */
+        RolePage: {
+            items: components["schemas"]["RoleResource"][];
+            nextCursor?: string;
+        };
+        /** Role Binding */
+        RoleBindingResource: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            roleId: string;
+            subjectKind: components["schemas"]["SubjectKind"];
+            subject: string;
+            scope?: components["schemas"]["Selector"];
+            origin: components["schemas"]["Origin"];
+            /** Format: int64 */
+            version: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        /** Create Role Binding Request */
+        CreateRoleBindingRequest: {
+            /** Format: uuid */
+            roleId: string;
+            subjectKind: components["schemas"]["SubjectKind"];
+            subject: string;
+            scope?: components["schemas"]["Selector"];
+        };
+        /** Update Role Binding Request */
+        UpdateRoleBindingRequest: {
+            scope?: components["schemas"]["Selector"];
+            /** Format: int64 */
+            version: number;
+        };
+        /** Role Binding Page */
+        RoleBindingPage: {
+            items: components["schemas"]["RoleBindingResource"][];
+            nextCursor?: string;
+        };
+        /**
+         * CA Configuration
+         * @description Per-CA backend + key REFERENCE. NEVER contains private key material.
+         */
+        CaResource: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            caKind: components["schemas"]["CaKind"];
+            backend: components["schemas"]["CaBackend"];
+            /** @description A backend key handle/reference only — NEVER private key material. */
+            keyReference: string;
+            algorithm: components["schemas"]["CaAlgorithm"];
+            rotationState: components["schemas"]["CaRotationState"];
+            origin: components["schemas"]["Origin"];
+            /** Format: int64 */
+            version: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        /** Create CA Request */
+        CreateCaRequest: {
+            name: string;
+            caKind: components["schemas"]["CaKind"];
+            backend: components["schemas"]["CaBackend"];
+            /** @description A backend key handle/reference only — private material is rejected (422). */
+            keyReference: string;
+            algorithm?: components["schemas"]["CaAlgorithm"];
+        };
+        /** Update CA Request */
+        UpdateCaRequest: {
+            backend: components["schemas"]["CaBackend"];
+            keyReference: string;
+            algorithm: components["schemas"]["CaAlgorithm"];
+            /** Format: int64 */
+            version: number;
+        };
+        /**
+         * Rotate CA Request
+         * @description Optional overrides for the incoming key; omitted fields inherit the active CA.
+         */
+        RotateCaRequest: {
+            algorithm?: components["schemas"]["CaAlgorithm"];
+            /** @description The incoming key handle/reference (backend-provisioned); private material is rejected (422). */
+            keyReference?: string;
+        };
+        /** CA Page */
+        CaPage: {
+            items: components["schemas"]["CaResource"][];
+            nextCursor?: string;
+        };
+        /**
+         * Service Account
+         * @description A machine-consumer DEFINITION. NEVER contains a secret.
+         */
+        ServiceAccountResource: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            description?: string;
+            authMethod: components["schemas"]["ServiceAccountAuthMethod"];
+            /** @description A public key / JWKS reference only — NEVER a secret. */
+            keyReference?: string;
+            /** Format: int32 */
+            tokenTtlSeconds?: number;
+            origin: components["schemas"]["Origin"];
+            /** Format: int64 */
+            version: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        /** Create Service Account Request */
+        CreateServiceAccountRequest: {
+            name: string;
+            description?: string;
+            authMethod?: components["schemas"]["ServiceAccountAuthMethod"];
+            /** @description A public key / JWKS reference only — private material is rejected (422). */
+            keyReference?: string;
+            /** Format: int32 */
+            tokenTtlSeconds?: number;
+        };
+        /** Update Service Account Request */
+        UpdateServiceAccountRequest: {
+            description?: string;
+            authMethod?: components["schemas"]["ServiceAccountAuthMethod"];
+            keyReference?: string;
+            /** Format: int32 */
+            tokenTtlSeconds?: number;
+            /** Format: int64 */
+            version: number;
+        };
+        /** Service Account Page */
+        ServiceAccountPage: {
+            items: components["schemas"]["ServiceAccountResource"][];
+            nextCursor?: string;
+        };
+        /** Node Policy */
+        NodePolicyResource: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            desiredLabels: components["schemas"]["LabelMap"];
+            connectorKind: components["schemas"]["ConnectorKind"];
+            hostPinRef?: string;
+            hostCaRef?: string;
+            origin: components["schemas"]["Origin"];
+            /** Format: int64 */
+            version: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        /** Create Node Policy Request */
+        CreateNodePolicyRequest: {
+            name: string;
+            desiredLabels?: components["schemas"]["LabelMap"];
+            connectorKind: components["schemas"]["ConnectorKind"];
+            hostPinRef?: string;
+            hostCaRef?: string;
+        };
+        /** Update Node Policy Request */
+        UpdateNodePolicyRequest: {
+            desiredLabels?: components["schemas"]["LabelMap"];
+            connectorKind: components["schemas"]["ConnectorKind"];
+            hostPinRef?: string;
+            hostCaRef?: string;
+            /** Format: int64 */
+            version: number;
+        };
+        /** Node Policy Page */
+        NodePolicyPage: {
+            items: components["schemas"]["NodePolicyResource"][];
+            nextCursor?: string;
+        };
+        /** Capability Definition */
+        CapabilityDefResource: {
+            /** Format: uuid */
+            id: string;
+            name: components["schemas"]["Capability"];
+            description?: string;
+            origin: components["schemas"]["Origin"];
+            /** Format: int64 */
+            version: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        /** Create Capability Definition Request */
+        CreateCapabilityDefRequest: {
+            name: components["schemas"]["Capability"];
+            description?: string;
+        };
+        /** Update Capability Definition Request */
+        UpdateCapabilityDefRequest: {
+            description?: string;
+            /** Format: int64 */
+            version: number;
+        };
+        /** Capability Definition Page */
+        CapabilityDefPage: {
+            items: components["schemas"]["CapabilityDefResource"][];
+            nextCursor?: string;
+        };
+        /** JIT Policy */
+        JitPolicyResource: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            targetSelector: components["schemas"]["Selector"];
+            capabilities: components["schemas"]["Capability"][];
+            /** Format: int32 */
+            maxTtlSeconds: number;
+            approvalChain: components["schemas"]["JitApprovalLevel"][];
+            origin: components["schemas"]["Origin"];
+            /** Format: int64 */
+            version: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        /** Create JIT Policy Request */
+        CreateJitPolicyRequest: {
+            name: string;
+            targetSelector: components["schemas"]["Selector"];
+            capabilities?: components["schemas"]["Capability"][];
+            /** Format: int32 */
+            maxTtlSeconds: number;
+            approvalChain?: components["schemas"]["JitApprovalLevel"][];
+        };
+        /** Update JIT Policy Request */
+        UpdateJitPolicyRequest: {
+            targetSelector: components["schemas"]["Selector"];
+            capabilities?: components["schemas"]["Capability"][];
+            /** Format: int32 */
+            maxTtlSeconds: number;
+            approvalChain?: components["schemas"]["JitApprovalLevel"][];
+            /** Format: int64 */
+            version: number;
+        };
+        /** JIT Policy Page */
+        JitPolicyPage: {
+            items: components["schemas"]["JitPolicyResource"][];
+            nextCursor?: string;
+        };
+        /** Break-glass Policy */
+        BreakglassPolicyResource: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            recordingStrict: boolean;
+            alertTarget: string;
+            reviewRequired: boolean;
+            authPath: components["schemas"]["BreakglassAuthPath"];
+            origin: components["schemas"]["Origin"];
+            /** Format: int64 */
+            version: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        /** Create Break-glass Policy Request */
+        CreateBreakglassPolicyRequest: {
+            name: string;
+            recordingStrict?: boolean;
+            alertTarget: string;
+            reviewRequired?: boolean;
+            authPath?: components["schemas"]["BreakglassAuthPath"];
+        };
+        /** Update Break-glass Policy Request */
+        UpdateBreakglassPolicyRequest: {
+            recordingStrict?: boolean;
+            alertTarget: string;
+            reviewRequired?: boolean;
+            authPath?: components["schemas"]["BreakglassAuthPath"];
+            /** Format: int64 */
+            version: number;
+        };
+        /** Break-glass Policy Page */
+        BreakglassPolicyPage: {
+            items: components["schemas"]["BreakglassPolicyResource"][];
+            nextCursor?: string;
+        };
+        /** SSH Session */
+        SessionResource: {
+            /** Format: uuid */
+            id: string;
+            identity: string;
+            /** Format: uuid */
+            nodeId?: string;
+            nodeName?: string;
+            principal: string;
+            /** Format: uuid */
+            gatewayId?: string;
+            gatewayName?: string;
+            accessModel: components["schemas"]["AccessModel"];
+            capabilities: components["schemas"]["Capability"][];
+            /** Format: uuid */
+            matchedRuleId?: string;
+            matchedRuleName?: string;
+            /** Format: uuid */
+            jitRequestId?: string;
+            /** Format: uuid */
+            breakglassActivationId?: string;
+            /** Format: int64 */
+            policyEpoch?: number;
+            /** Format: date-time */
+            grantExpiry?: string;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: date-time */
+            endedAt?: string;
+            endReason?: string;
+        };
+        /** Terminate Session Request */
+        TerminateSessionRequest: {
+            /**
+             * @description Operator/audit reason (never disclosed to the SSH user). Bounded like a
+             *     Lock reason (it becomes one) so it cannot inflate the pushed deny-list.
+             */
+            reason?: string;
+        };
+        /** Session Page */
+        SessionPage: {
+            items: components["schemas"]["SessionResource"][];
+            nextCursor?: string;
+        };
+        /**
+         * Recording
+         * @description Session recording metadata (Design §12). NEVER carries recording bytes.
+         */
+        RecordingResource: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            sessionId: string;
+            /** @description The session subject identity (the recorded user). */
+            identity?: string;
+            /** Format: uuid */
+            nodeId?: string;
+            /** @description Capture format (e.g. `asciicast-v2`). */
+            format?: string;
+            /** @description Lifecycle status (`recording|finalized|truncated|failed`). */
+            status?: string;
+            /** @description WORM object-lock mode (`compliance|governance`). */
+            wormMode?: string;
+            /** Format: int64 */
+            sizeBytes?: number;
+            /** @description The tamper-evidence hash-chain head (hex). */
+            hashChainHead?: string;
+            /** @description A reference to the customer-held encryption key — NEVER key material. */
+            encryptionKeyRef?: string;
+            legalHold?: boolean;
+            /** Format: date-time */
+            retentionUntil?: string;
+            /**
+             * Format: date-time
+             * @description When the encrypted object was deleted (retention prune or governance delete); metadata is retained.
+             */
+            prunedAt?: string;
+            /** Format: date-time */
+            startedAt?: string;
+            /** Format: date-time */
+            endedAt?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        /**
+         * Legal Hold Request
+         * @description Places or releases a legal hold on a recording (FR-AUD-6).
+         */
+        LegalHoldRequest: {
+            /** @description True to place a legal hold, false to release it. */
+            held: boolean;
+            reason?: string;
+        };
+        /** Recording Page */
+        RecordingPage: {
+            items: components["schemas"]["RecordingResource"][];
+            nextCursor?: string;
+        };
+        /**
+         * Signed URL
+         * @description A short-lived, single-object signed URL. Bytes never proxy through the CP.
+         */
+        SignedUrl: {
+            /** Format: uri */
+            url: string;
+            /** @description The HTTP method to use against the signed URL (e.g. `GET`). */
+            method: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        /**
+         * Audit Event
+         * @description One row of the correlated append-only audit stream (Design §12).
+         */
+        AuditEventResource: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            occurredAt: string;
+            actor: string;
+            subject?: string;
+            action: string;
+            outcome: string;
+            /** Format: uuid */
+            sessionId?: string;
+            /** Format: uuid */
+            nodeId?: string;
+            /** Format: uuid */
+            correlationId?: string;
+            sourceIp?: string;
+            detail?: components["schemas"]["Selector"];
+        };
+        /** Audit Event Page */
+        AuditEventPage: {
+            items: components["schemas"]["AuditEventResource"][];
+            nextCursor?: string;
+        };
     };
     responses: {
         /** @description An error occurred. The body is an RFC 9457 problem document. */
@@ -131,8 +2697,47 @@ export interface components {
                 "application/problem+json": components["schemas"]["ProblemDetails"];
             };
         };
+        /**
+         * @description The operation is frozen in the contract but not yet implemented (Session 18).
+         *     The body is an RFC 9457 problem document with `status` 501.
+         */
+        NotImplemented: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ProblemDetails"];
+            };
+        };
     };
-    parameters: never;
+    parameters: {
+        /**
+         * @description Opaque forward-only pagination cursor from a previous page's `nextCursor`.
+         *     Omit for the first page. An unrecognised cursor is a `400`.
+         */
+        Cursor: string;
+        /** @description Maximum items to return in one page (the server clamps to its maximum). */
+        Limit: number;
+        /**
+         * @description Optional client-generated idempotency key scoping a mutating request. A
+         *     retry with the same key, method, and path returns the original response and
+         *     never repeats the side effect; the same key with a different request body is
+         *     a `422`. Keys are retained for a bounded TTL.
+         */
+        IdempotencyKey: string;
+        RuleId: string;
+        RoleId: string;
+        BindingId: string;
+        CaId: string;
+        ServiceAccountId: string;
+        NodePolicyId: string;
+        CapabilityDefId: string;
+        JitPolicyId: string;
+        BreakglassPolicyId: string;
+        SessionId: string;
+        RecordingId: string;
+        AuditEventId: string;
+    };
     requestBodies: never;
     headers: never;
     pathItems: never;
@@ -189,6 +2794,2630 @@ export interface operations {
                 };
             };
             "4XX": components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    issueMachineToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TokenRequest"];
+            };
+        };
+        responses: {
+            /** @description An access token was issued. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    issueOtp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueOtpRequest"];
+            };
+        };
+        responses: {
+            /** @description An OTP was issued (raw value returned once). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuedOtp"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listPins: {
+        parameters: {
+            query: {
+                identity: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The identity's pins. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PinList"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    createPin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePinRequest"];
+            };
+        };
+        responses: {
+            /** @description The pin was created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PinResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    revokePin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pinId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The pin was revoked (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    issueServiceAccountCredential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceAccountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueServiceAccountCredentialRequest"];
+            };
+        };
+        responses: {
+            /** @description The credential was issued. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccountCredentialResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    revokeServiceAccountCredential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceAccountId: string;
+                credentialId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The credential was revoked (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    beginDeviceFlow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BeginDeviceFlowRequest"];
+            };
+        };
+        responses: {
+            /** @description A device flow was started. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceFlowResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    pollDeviceFlow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PollDeviceFlowRequest"];
+            };
+        };
+        responses: {
+            /** @description The current device-flow status. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceFlowStatus"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            429: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listLocks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The active locks. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LockList"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    createLock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLockRequest"];
+            };
+        };
+        responses: {
+            /** @description The lock was created and pushed. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LockResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    releaseLock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lockId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The lock was released (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listJoinTokens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The active join tokens (metadata only, never the raw token). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JoinTokenList"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    issueJoinToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueJoinTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description A join token was issued (raw value returned once). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuedJoinToken"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    revokeJoinToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                joinTokenId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The join token was revoked (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listNodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The enrolled nodes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeList"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    registerNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterNodeRequest"];
+            };
+        };
+        responses: {
+            /** @description The node was registered. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nodeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The node. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    removeNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nodeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The node was removed (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    quarantineNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nodeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuarantineNodeRequest"];
+            };
+        };
+        responses: {
+            /** @description The node was quarantined and the lock pushed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    releaseQuarantine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nodeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The node was released from quarantine. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listJitRequests: {
+        parameters: {
+            query?: {
+                state?: string;
+                requester?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The JIT requests. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JitRequestList"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    submitJitRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JitRequestSubmission"];
+            };
+        };
+        responses: {
+            /** @description The JIT request was submitted. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JitRequestResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getJitRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jitRequestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The JIT request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JitRequestResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    approveJitRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jitRequestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["JitDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated JIT request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JitRequestResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    denyJitRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jitRequestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["JitDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The denied JIT request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JitRequestResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    revokeJitRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jitRequestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["JitDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The revoked JIT request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JitRequestResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listBreakglassCredentials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The break-glass credentials. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreakglassCredentialList"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    registerBreakglassCredential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterBreakglassCredentialRequest"];
+            };
+        };
+        responses: {
+            /** @description The credential was registered. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreakglassCredentialResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    revokeBreakglassCredential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                credentialId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The credential was revoked (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listBreakglassOfflineCodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The offline-code metadata. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreakglassOfflineCodeList"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    issueBreakglassOfflineCodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueBreakglassOfflineCodesRequest"];
+            };
+        };
+        responses: {
+            /** @description The codes were issued (raw values returned once). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuedBreakglassOfflineCodes"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listBreakglassActivations: {
+        parameters: {
+            query?: {
+                reviewStatus?: "pending" | "reviewed";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The break-glass activations. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreakglassActivationList"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    reviewBreakglassActivation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewBreakglassActivationRequest"];
+            };
+        };
+        responses: {
+            /** @description The reviewed activation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreakglassActivationResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listRules: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Opaque forward-only pagination cursor from a previous page's `nextCursor`.
+                 *     Omit for the first page. An unrecognised cursor is a `400`.
+                 */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Maximum items to return in one page (the server clamps to its maximum). */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of rules. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RulePage"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    createRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRuleRequest"];
+            };
+        };
+        responses: {
+            /** @description The rule was created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ruleId: components["parameters"]["RuleId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The rule. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ruleId: components["parameters"]["RuleId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRuleRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated rule. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ruleId: components["parameters"]["RuleId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The rule was deleted (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listRoles: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Opaque forward-only pagination cursor from a previous page's `nextCursor`.
+                 *     Omit for the first page. An unrecognised cursor is a `400`.
+                 */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Maximum items to return in one page (the server clamps to its maximum). */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of roles. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RolePage"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    createRole: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description The role was created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: components["parameters"]["RoleId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The role. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: components["parameters"]["RoleId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated role. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: components["parameters"]["RoleId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The role was deleted (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listRoleBindings: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Opaque forward-only pagination cursor from a previous page's `nextCursor`.
+                 *     Omit for the first page. An unrecognised cursor is a `400`.
+                 */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Maximum items to return in one page (the server clamps to its maximum). */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of role bindings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleBindingPage"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    createRoleBinding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRoleBindingRequest"];
+            };
+        };
+        responses: {
+            /** @description The role binding was created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleBindingResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getRoleBinding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bindingId: components["parameters"]["BindingId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The role binding. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleBindingResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateRoleBinding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bindingId: components["parameters"]["BindingId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRoleBindingRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated role binding. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleBindingResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteRoleBinding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bindingId: components["parameters"]["BindingId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The role binding was deleted (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listCas: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Opaque forward-only pagination cursor from a previous page's `nextCursor`.
+                 *     Omit for the first page. An unrecognised cursor is a `400`.
+                 */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Maximum items to return in one page (the server clamps to its maximum). */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of CA configurations (public/config only). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaPage"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    createCa: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCaRequest"];
+            };
+        };
+        responses: {
+            /** @description The CA configuration was created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getCa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caId: components["parameters"]["CaId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The CA configuration. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateCa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caId: components["parameters"]["CaId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCaRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated CA configuration. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteCa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caId: components["parameters"]["CaId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The CA configuration was deleted (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    rotateCa: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                caId: components["parameters"]["CaId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RotateCaRequest"];
+            };
+        };
+        responses: {
+            /** @description Rotation completed; the new active CA configuration. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listServiceAccounts: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Opaque forward-only pagination cursor from a previous page's `nextCursor`.
+                 *     Omit for the first page. An unrecognised cursor is a `400`.
+                 */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Maximum items to return in one page (the server clamps to its maximum). */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of service accounts. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccountPage"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    createServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateServiceAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description The service account was created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccountResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceAccountId: components["parameters"]["ServiceAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The service account. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccountResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceAccountId: components["parameters"]["ServiceAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateServiceAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated service account. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccountResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceAccountId: components["parameters"]["ServiceAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The service account was deleted (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listNodePolicies: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Opaque forward-only pagination cursor from a previous page's `nextCursor`.
+                 *     Omit for the first page. An unrecognised cursor is a `400`.
+                 */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Maximum items to return in one page (the server clamps to its maximum). */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of node policies. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodePolicyPage"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    createNodePolicy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateNodePolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description The node policy was created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodePolicyResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getNodePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nodePolicyId: components["parameters"]["NodePolicyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The node policy. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodePolicyResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateNodePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nodePolicyId: components["parameters"]["NodePolicyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateNodePolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated node policy. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodePolicyResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteNodePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nodePolicyId: components["parameters"]["NodePolicyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The node policy was deleted (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listCapabilityDefs: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Opaque forward-only pagination cursor from a previous page's `nextCursor`.
+                 *     Omit for the first page. An unrecognised cursor is a `400`.
+                 */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Maximum items to return in one page (the server clamps to its maximum). */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of capability definitions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapabilityDefPage"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    createCapabilityDef: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCapabilityDefRequest"];
+            };
+        };
+        responses: {
+            /** @description The capability definition was created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapabilityDefResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getCapabilityDef: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                capabilityDefId: components["parameters"]["CapabilityDefId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The capability definition. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapabilityDefResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateCapabilityDef: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                capabilityDefId: components["parameters"]["CapabilityDefId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCapabilityDefRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated capability definition. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapabilityDefResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteCapabilityDef: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                capabilityDefId: components["parameters"]["CapabilityDefId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The capability definition was deleted (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listJitPolicies: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Opaque forward-only pagination cursor from a previous page's `nextCursor`.
+                 *     Omit for the first page. An unrecognised cursor is a `400`.
+                 */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Maximum items to return in one page (the server clamps to its maximum). */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of JIT policies. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JitPolicyPage"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    createJitPolicy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateJitPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description The JIT policy was created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JitPolicyResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getJitPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jitPolicyId: components["parameters"]["JitPolicyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The JIT policy. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JitPolicyResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateJitPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jitPolicyId: components["parameters"]["JitPolicyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateJitPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated JIT policy. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JitPolicyResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteJitPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jitPolicyId: components["parameters"]["JitPolicyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The JIT policy was deleted (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listBreakglassPolicies: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Opaque forward-only pagination cursor from a previous page's `nextCursor`.
+                 *     Omit for the first page. An unrecognised cursor is a `400`.
+                 */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Maximum items to return in one page (the server clamps to its maximum). */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of break-glass policies. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreakglassPolicyPage"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    createBreakglassPolicy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBreakglassPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description The break-glass policy was created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreakglassPolicyResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getBreakglassPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                breakglassPolicyId: components["parameters"]["BreakglassPolicyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The break-glass policy. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreakglassPolicyResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateBreakglassPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                breakglassPolicyId: components["parameters"]["BreakglassPolicyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBreakglassPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated break-glass policy. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreakglassPolicyResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteBreakglassPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                breakglassPolicyId: components["parameters"]["BreakglassPolicyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The break-glass policy was deleted (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listSessions: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Opaque forward-only pagination cursor from a previous page's `nextCursor`.
+                 *     Omit for the first page. An unrecognised cursor is a `400`.
+                 */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Maximum items to return in one page (the server clamps to its maximum). */
+                limit?: components["parameters"]["Limit"];
+                /** @description Filter to one subject identity. */
+                identity?: string;
+                /** @description Filter to one node id. */
+                nodeId?: string;
+                /** @description Filter to one access model. */
+                accessModel?: "standing" | "jit" | "breakglass";
+                /** @description When true, return only sessions that have not ended. */
+                activeOnly?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of sessions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionPage"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: components["parameters"]["SessionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The session. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    terminateSession: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                sessionId: components["parameters"]["SessionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TerminateSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description The teardown lock was pushed. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listRecordings: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Opaque forward-only pagination cursor from a previous page's `nextCursor`.
+                 *     Omit for the first page. An unrecognised cursor is a `400`.
+                 */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Maximum items to return in one page (the server clamps to its maximum). */
+                limit?: components["parameters"]["Limit"];
+                /** @description Filter to one session id. */
+                sessionId?: string;
+                /** @description Filter to one subject identity. */
+                identity?: string;
+                /** @description Filter to one node id. */
+                nodeId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of recording metadata. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingPage"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getRecording: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordingId: components["parameters"]["RecordingId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The recording metadata. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteRecording: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                recordingId: components["parameters"]["RecordingId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The recording object was governance-deleted (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    replayRecording: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                recordingId: components["parameters"]["RecordingId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A short-lived signed URL for replay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignedUrl"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    exportRecording: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                recordingId: components["parameters"]["RecordingId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A short-lived signed URL for export. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignedUrl"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    setRecordingLegalHold: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                recordingId: components["parameters"]["RecordingId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalHoldRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated recording metadata. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    searchAuditEvents: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Opaque forward-only pagination cursor from a previous page's `nextCursor`.
+                 *     Omit for the first page. An unrecognised cursor is a `400`.
+                 */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Maximum items to return in one page (the server clamps to its maximum). */
+                limit?: components["parameters"]["Limit"];
+                /** @description Filter by acting identity. */
+                actor?: string;
+                /** @description Filter by the subject the action targeted. */
+                subject?: string;
+                /** @description Filter by action name (e.g. `lock.create`). */
+                action?: string;
+                /** @description Filter by outcome. */
+                outcome?: string;
+                /** @description Filter to one session id. */
+                sessionId?: string;
+                /** @description Filter to one node id. */
+                nodeId?: string;
+                /** @description Filter by source IP. */
+                sourceIp?: string;
+                /** @description Inclusive lower bound on occurrence time (RFC 3339). */
+                from?: string;
+                /** @description Exclusive upper bound on occurrence time (RFC 3339). */
+                to?: string;
+                /** @description Filter to events whose capability set includes this capability (FR-AUD-8). */
+                capability?: components["schemas"]["Capability"];
+                /** @description Filter by the session's access model (FR-AUD-8). */
+                accessModel?: components["schemas"]["AccessModel"];
+                /**
+                 * @description Filter by a snapshot node label as `key=value` (FR-AUD-8). Repeatable;
+                 *     all supplied labels must match (AND).
+                 */
+                nodeLabel?: string[];
+                /** @description Filter to one correlation id — the FR-AUD-9 full-path join key. */
+                correlationId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of audit events (newest first). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEventPage"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getAuditEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                auditEventId: components["parameters"]["AuditEventId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The audit event. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEventResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            501: components["responses"]["NotImplemented"];
             default: components["responses"]["Problem"];
         };
     };
