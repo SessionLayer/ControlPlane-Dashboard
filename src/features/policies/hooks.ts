@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { unwrap } from '../../api/problem';
 import { useCursorList, resourceKey } from '../../api/http';
-import { idempotencyHeader } from '../../api/idempotency';
+import { useIdempotencyKey } from '../../api/useIdempotencyKey';
 import type {
   CapabilityDefResource,
   CreateCapabilityDefRequest,
@@ -35,16 +35,19 @@ export function useCapabilityDefs() {
 
 export function useCreateCapabilityDef() {
   const qc = useQueryClient();
+  const idem = useIdempotencyKey();
   return useMutation({
     mutationFn: async (body: CreateCapabilityDefRequest) =>
       unwrap(
         await api.POST('/v1/capability-defs', {
           body,
-          params: { header: idempotencyHeader() },
+          params: { header: idem.header() },
         }),
       ),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: resourceKey('capability-defs') }),
+    onSuccess: () => {
+      idem.reset();
+      return qc.invalidateQueries({ queryKey: resourceKey('capability-defs') });
+    },
   });
 }
 
@@ -97,16 +100,19 @@ export function useJitPolicies() {
 
 export function useCreateJitPolicy() {
   const qc = useQueryClient();
+  const idem = useIdempotencyKey();
   return useMutation({
     mutationFn: async (body: CreateJitPolicyRequest) =>
       unwrap(
         await api.POST('/v1/jit-policies', {
           body,
-          params: { header: idempotencyHeader() },
+          params: { header: idem.header() },
         }),
       ),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: resourceKey('jit-policies') }),
+    onSuccess: () => {
+      idem.reset();
+      return qc.invalidateQueries({ queryKey: resourceKey('jit-policies') });
+    },
   });
 }
 
@@ -156,16 +162,21 @@ export function useBreakglassPolicies() {
 
 export function useCreateBreakglassPolicy() {
   const qc = useQueryClient();
+  const idem = useIdempotencyKey();
   return useMutation({
     mutationFn: async (body: CreateBreakglassPolicyRequest) =>
       unwrap(
         await api.POST('/v1/breakglass-policies', {
           body,
-          params: { header: idempotencyHeader() },
+          params: { header: idem.header() },
         }),
       ),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: resourceKey('breakglass-policies') }),
+    onSuccess: () => {
+      idem.reset();
+      return qc.invalidateQueries({
+        queryKey: resourceKey('breakglass-policies'),
+      });
+    },
   });
 }
 
@@ -218,16 +229,19 @@ export function useNodePolicies() {
 
 export function useCreateNodePolicy() {
   const qc = useQueryClient();
+  const idem = useIdempotencyKey();
   return useMutation({
     mutationFn: async (body: CreateNodePolicyRequest) =>
       unwrap(
         await api.POST('/v1/node-policies', {
           body,
-          params: { header: idempotencyHeader() },
+          params: { header: idem.header() },
         }),
       ),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: resourceKey('node-policies') }),
+    onSuccess: () => {
+      idem.reset();
+      return qc.invalidateQueries({ queryKey: resourceKey('node-policies') });
+    },
   });
 }
 

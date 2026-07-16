@@ -257,8 +257,15 @@ function frameAad(index: number): ArrayBuffer {
 /**
  * Decrypt a full SLREC1 object with the customer private key, returning the
  * original asciicast v2 UTF-8 bytes. Throws {@link SlrecError} with a code the UI
- * maps to a graceful message. A tampered/reordered/truncated object fails the GCM
- * tag (`decrypt-failed`) — decryption is itself tamper-evidence.
+ * maps to a graceful message.
+ *
+ * Tamper-evidence at the cipher layer covers a WRONG KEY, a corrupted frame, and
+ * frame REORDER/INTERIOR-DELETE (each frame binds its index as AAD → GCM tag
+ * mismatch). It does NOT cover dropping WHOLE TRAILING frames: the format has no
+ * frame count/terminator, so a tail-truncated object still decrypts cleanly. The
+ * caller must guard the fetch path against truncation (the replay/export pipeline
+ * checks the fetched object length against the CP-reported `sizeBytes`); full
+ * hash-chain verification against `hashChainHead` is the cross-repo follow-up.
  */
 export async function unsealRecording(
   object: Uint8Array,

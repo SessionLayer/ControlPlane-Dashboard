@@ -52,25 +52,44 @@ export function DataTable<T>({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr
-              key={rowKey(row)}
-              className={onRowClick !== undefined ? 'row-clickable' : undefined}
-              onClick={
-                onRowClick !== undefined
-                  ? () => {
-                      onRowClick(row);
-                    }
-                  : undefined
-              }
-            >
-              {columns.map((c) => (
-                <td key={c.header} style={{ textAlign: c.align ?? 'left' }}>
-                  {c.cell(row)}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {rows.map((row) => {
+            const clickable = onRowClick !== undefined;
+            return (
+              <tr
+                key={rowKey(row)}
+                className={clickable ? 'row-clickable' : undefined}
+                // An actionable row must be keyboard-operable, not mouse-only
+                // (WCAG 2.1.1): focusable + Enter/Space activate. `role=button`
+                // announces it as interactive; focus returns here when a detail
+                // dialog opened from the row closes.
+                role={clickable ? 'button' : undefined}
+                tabIndex={clickable ? 0 : undefined}
+                onClick={
+                  clickable
+                    ? () => {
+                        onRowClick(row);
+                      }
+                    : undefined
+                }
+                onKeyDown={
+                  clickable
+                    ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onRowClick(row);
+                        }
+                      }
+                    : undefined
+                }
+              >
+                {columns.map((c) => (
+                  <td key={c.header} style={{ textAlign: c.align ?? 'left' }}>
+                    {c.cell(row)}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

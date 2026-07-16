@@ -96,6 +96,13 @@ export function AuthProvider({
         throw new Error('State mismatch; possible CSRF — sign-in rejected.');
       }
       const tokens = await exchangeCode(config, code, transient.verifier);
+      // Bind the ID token to this auth request: if it carries a `nonce`, it must
+      // match the one we sent (OIDC replay protection). Absent (e.g. an access
+      // token fallback) → can't check, accept. Signature is still the CP's job.
+      const nonce = decodeClaims(tokens.bearer).nonce;
+      if (nonce !== undefined && nonce !== transient.nonce) {
+        throw new Error('Nonce mismatch; sign-in rejected (possible replay).');
+      }
       setBearer(tokens.bearer);
     },
     [config],

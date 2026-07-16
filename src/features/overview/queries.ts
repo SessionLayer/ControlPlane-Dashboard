@@ -16,6 +16,12 @@ import type {
 // entries independent of the per-resource feature screens built in parallel.
 const OVERVIEW = 'overview';
 
+// Live posture: always refetch when the overview (re)mounts. The 'overview'
+// namespace isn't invalidated by IR/fleet mutations on other screens, so without
+// this a just-released lock / just-approved JIT could linger on the incident
+// dashboard for up to the global staleTime when the operator navigates back.
+const LIVE = { staleTime: 0 } as const;
+
 export interface ActiveSessions {
   items: SessionResource[];
   /** True when the first page did not exhaust the active set (count is a floor). */
@@ -25,6 +31,7 @@ export interface ActiveSessions {
 /** Active SSH sessions (`activeOnly`), first page only — enough for a KPI + list. */
 export function useActiveSessions(limit = 100): UseQueryResult<ActiveSessions> {
   return useQuery({
+    ...LIVE,
     queryKey: resourceKey(OVERVIEW, 'sessions', limit),
     queryFn: async ({ signal }): Promise<ActiveSessions> => {
       const p = unwrap(
@@ -41,6 +48,7 @@ export function useActiveSessions(limit = 100): UseQueryResult<ActiveSessions> {
 /** JIT requests awaiting an approval decision. */
 export function usePendingJit(): UseQueryResult<JitRequestResource[]> {
   return useQuery({
+    ...LIVE,
     queryKey: resourceKey(OVERVIEW, 'jit-pending'),
     queryFn: async ({ signal }) =>
       unwrap(
@@ -55,6 +63,7 @@ export function usePendingJit(): UseQueryResult<JitRequestResource[]> {
 /** Current (unexpired) access locks. */
 export function useActiveLocks(): UseQueryResult<LockResource[]> {
   return useQuery({
+    ...LIVE,
     queryKey: resourceKey(OVERVIEW, 'locks'),
     queryFn: async ({ signal }) =>
       unwrap(await api.GET('/v1/locks', { signal })).locks,
@@ -66,6 +75,7 @@ export function useBreakglassActivations(): UseQueryResult<
   BreakglassActivationResource[]
 > {
   return useQuery({
+    ...LIVE,
     queryKey: resourceKey(OVERVIEW, 'breakglass'),
     queryFn: async ({ signal }) =>
       unwrap(await api.GET('/v1/breakglass/activations', { signal }))
@@ -76,6 +86,7 @@ export function useBreakglassActivations(): UseQueryResult<
 /** The node inventory, for health/status roll-ups. */
 export function useNodes(): UseQueryResult<NodeResource[]> {
   return useQuery({
+    ...LIVE,
     queryKey: resourceKey(OVERVIEW, 'nodes'),
     queryFn: async ({ signal }) =>
       unwrap(await api.GET('/v1/nodes', { signal })).nodes,
@@ -87,6 +98,7 @@ export function useRecentAudit(
   limit = 8,
 ): UseQueryResult<AuditEventResource[]> {
   return useQuery({
+    ...LIVE,
     queryKey: resourceKey(OVERVIEW, 'audit', limit),
     queryFn: async ({ signal }) =>
       unwrap(

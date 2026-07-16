@@ -59,7 +59,9 @@ describe('recording replay (client-side decrypt)', () => {
     const object = await sealAsciicast(spki, CAST, [30, 25]);
 
     server.use(
-      http.get(cp('/v1/recordings'), () => page([REC])),
+      http.get(cp('/v1/recordings'), () =>
+        page([{ ...REC, sizeBytes: object.length }]),
+      ),
       http.post(cp('/v1/recordings/:id/replay'), () =>
         ok({ url: OBJ_URL, method: 'GET', expiresAt: '2030-01-01T00:00:00Z' }),
       ),
@@ -92,7 +94,9 @@ describe('recording replay (client-side decrypt)', () => {
     const object = await sealAsciicast(sealed.spki, CAST);
 
     server.use(
-      http.get(cp('/v1/recordings'), () => page([REC])),
+      http.get(cp('/v1/recordings'), () =>
+        page([{ ...REC, sizeBytes: object.length }]),
+      ),
       http.post(cp('/v1/recordings/:id/replay'), () =>
         ok({ url: OBJ_URL, method: 'GET', expiresAt: '2030-01-01T00:00:00Z' }),
       ),
@@ -136,7 +140,9 @@ describe('recording replay (client-side decrypt)', () => {
     server.events.on('request:start', onStart);
 
     server.use(
-      http.get(cp('/v1/recordings'), () => page([REC])),
+      http.get(cp('/v1/recordings'), () =>
+        page([{ ...REC, sizeBytes: object.length }]),
+      ),
       http.post(cp('/v1/recordings/:id/replay'), () =>
         ok({ url: OBJ_URL, method: 'GET', expiresAt: '2030-01-01T00:00:00Z' }),
       ),
@@ -184,7 +190,9 @@ describe('recording replay (client-side decrypt)', () => {
     const object = await sealAsciicast(spki, CAST);
 
     server.use(
-      http.get(cp('/v1/recordings'), () => page([REC])),
+      http.get(cp('/v1/recordings'), () =>
+        page([{ ...REC, sizeBytes: object.length }]),
+      ),
       http.post(cp('/v1/recordings/:id/export'), () =>
         ok({ url: OBJ_URL, method: 'GET', expiresAt: '2030-01-01T00:00:00Z' }),
       ),
@@ -222,6 +230,38 @@ describe('recording replay (client-side decrypt)', () => {
     await screen.findByText(new RegExp(`Downloaded ${REC.id}`));
     expect(createUrl).toHaveBeenCalledTimes(1);
     expect(downloadName).toBe(`${REC.id}.cast`);
+  });
+
+  it('FAILS CLOSED on a size mismatch — tail-truncation guard (F-sec-1)', async () => {
+    const { spki, privateKeyPem } = await generateCustomerKeypair();
+    const object = await sealAsciicast(spki, CAST);
+
+    server.use(
+      // CP reports the true sealed size; the object store returns a body with a
+      // dropped trailing byte (a frame SLREC1 alone would decrypt cleanly).
+      http.get(cp('/v1/recordings'), () =>
+        page([{ ...REC, sizeBytes: object.length }]),
+      ),
+      http.post(cp('/v1/recordings/:id/replay'), () =>
+        ok({ url: OBJ_URL, method: 'GET', expiresAt: '2030-01-01T00:00:00Z' }),
+      ),
+      http.get(OBJ_URL, () =>
+        HttpResponse.arrayBuffer(object.slice(0, object.length - 1).buffer),
+      ),
+    );
+
+    renderWithProviders(<RecordingsScreen />, {
+      authenticated: true,
+      permissions: ['recording:replay'],
+    });
+
+    await loadKeyIntoScreen(privateKeyPem);
+    fireEvent.click(await screen.findByRole('button', { name: 'Replay' }));
+
+    expect(
+      await screen.findByText(/Recording integrity check failed/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('admin')).not.toBeInTheDocument();
   });
 
   it('loadExportBytes returns the exact decrypted asciicast bytes', async () => {

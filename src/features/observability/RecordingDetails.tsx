@@ -36,18 +36,27 @@ export function RecordingDetails({
   const [reason, setReason] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const held = recording.legalHold === true;
+  // Track legal-hold locally: the `recording` prop is a list-row snapshot, and
+  // invalidating the list does not refresh this open dialog. Flip on success so
+  // the badge, the button label, and the confirmation reflect the new state.
+  const [held, setHeld] = useState(recording.legalHold === true);
+  const [holdMessage, setHoldMessage] = useState<string | undefined>();
 
   const submitHold = () => {
+    const target = !held;
     legalHold.mutate(
       {
         recordingId: recording.id,
-        body: { held: !held, reason: reason || undefined },
+        body: { held: target, reason: reason || undefined },
       },
       {
         onSuccess: () => {
+          setHeld(target);
           setHoldOpen(false);
           setReason('');
+          setHoldMessage(
+            target ? 'Legal hold placed.' : 'Legal hold released.',
+          );
         },
       },
     );
@@ -145,6 +154,12 @@ export function RecordingDetails({
           )}
         </Detail>
       </DetailList>
+
+      {holdMessage !== undefined && (
+        <p role="status" className="export-done">
+          {holdMessage}
+        </p>
+      )}
 
       {holdOpen && (
         <ConfirmDialog

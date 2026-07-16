@@ -10,7 +10,7 @@
   --accent-contrast: #ffffff;
   --error: #b3261e;
   --pass: #1f7a4d;
-  --warn: #9a6b00;
+  --warn: #855c00;
   --fail: #b3261e;
   --info: #2c5fb3;
   --pending: #5b636e;
@@ -63,7 +63,7 @@
   --accent-contrast: #ffffff;
   --error: #b3261e;
   --pass: #1f7a4d;
-  --warn: #9a6b00;
+  --warn: #855c00;
   --fail: #b3261e;
   --info: #2c5fb3;
   --pending: #5b636e;
@@ -348,6 +348,22 @@ a {
 }
 .btn-ghost:hover:not(:disabled) {
   background: var(--surface-2);
+}
+
+/* An in-cell text trigger (node/session name → detail) that reads as a link. */
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--info);
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.link-button:hover:not(:disabled) {
+  filter: brightness(1.1);
 }
 
 /* ---------- Badges ---------- */
@@ -656,6 +672,9 @@ textarea.input {
   width: 100%;
   max-width: 38rem;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+.dialog-wide {
+  max-width: min(78vw, 60rem);
 }
 .dialog:focus {
   outline: none;

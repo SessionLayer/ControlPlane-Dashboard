@@ -13,7 +13,20 @@ import { parseAsciicast, type Asciicast } from '../../crypto/asciicast';
 import { unsealRecording } from '../../crypto/slrec';
 import type { SignedUrl } from '../../api/types';
 
-async function fetchObjectBytes(signed: SignedUrl): Promise<Uint8Array> {
+/**
+ * Fetch the sealed object from the signed URL and check its length against the
+ * CP-reported `sizeBytes`. The object comes from a leg OUTSIDE the CP trust
+ * boundary (object store / CDN), and the SLREC1 cipher does NOT detect trailing
+ * frames being dropped (per-frame AAD catches reorder/interior edits, not tail
+ * truncation). This length check — against a value the CP authenticated over the
+ * bearer API — fails closed on silent truncation. `expectedSize` is the stored
+ * (sealed) object size. Full hash-chain verification is a cross-repo follow-up
+ * (needs the Gateway chain algorithm; tracked with the deferred Merkle anchor).
+ */
+async function fetchObjectBytes(
+  signed: SignedUrl,
+  expectedSize: number | undefined,
+): Promise<Uint8Array> {
   // Plain fetch to the signed object URL — deliberately NOT the api client.
   const resp = await fetch(signed.url, { method: signed.method });
   if (!resp.ok) {
@@ -21,35 +34,43 @@ async function fetchObjectBytes(signed: SignedUrl): Promise<Uint8Array> {
       `Could not download the recording object (HTTP ${String(resp.status)}).`,
     );
   }
-  return new Uint8Array(await resp.arrayBuffer());
+  const bytes = new Uint8Array(await resp.arrayBuffer());
+  if (expectedSize !== undefined && bytes.length !== expectedSize) {
+    throw new Error(
+      `Recording integrity check failed: object is ${String(bytes.length)} bytes, expected ${String(expectedSize)} (truncated or tampered).`,
+    );
+  }
+  return bytes;
 }
 
-/** Replay: sign → download → decrypt → parse to a playable asciicast. */
+/** Replay: sign → download → integrity-check → decrypt → parse to a playable asciicast. */
 export async function loadReplayCast(
   recordingId: string,
   key: CryptoKey,
+  expectedSize?: number,
 ): Promise<Asciicast> {
   const signed = unwrap(
     await api.POST('/v1/recordings/{recordingId}/replay', {
       params: { path: { recordingId }, header: idempotencyHeader() },
     }),
   );
-  const bytes = await fetchObjectBytes(signed);
+  const bytes = await fetchObjectBytes(signed, expectedSize);
   const plaintext = await unsealRecording(bytes, key);
   return parseAsciicast(new TextDecoder().decode(plaintext));
 }
 
-/** Export: sign → download → decrypt to the raw asciicast v2 bytes for saving. */
+/** Export: sign → download → integrity-check → decrypt to the raw asciicast v2 bytes. */
 export async function loadExportBytes(
   recordingId: string,
   key: CryptoKey,
+  expectedSize?: number,
 ): Promise<Uint8Array> {
   const signed = unwrap(
     await api.POST('/v1/recordings/{recordingId}/export', {
       params: { path: { recordingId }, header: idempotencyHeader() },
     }),
   );
-  const bytes = await fetchObjectBytes(signed);
+  const bytes = await fetchObjectBytes(signed, expectedSize);
   return unsealRecording(bytes, key);
 }
 

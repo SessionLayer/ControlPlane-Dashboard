@@ -64,7 +64,7 @@ export function ReplayDialog({
     setLoading(true);
     setError(undefined);
     setCast(undefined);
-    void loadReplayCast(recording.id, key)
+    void loadReplayCast(recording.id, key, recording.sizeBytes)
       .then((c) => {
         if (!cancelled) {
           setCast(c);
@@ -85,7 +85,7 @@ export function ReplayDialog({
   const title = `Replay — ${recording.identity ?? recording.sessionId}`;
 
   return (
-    <Dialog title={title} onClose={onClose}>
+    <Dialog title={title} onClose={onClose} size="wide">
       <div className="replay-dialog">
         <KeyInput keyState={keyState} />
 

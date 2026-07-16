@@ -13,6 +13,8 @@ export interface UserClaims {
   email: string | undefined;
   permissions: PlatformPermission[];
   expiresAt: number | undefined;
+  /** OIDC `nonce` claim — bound to the auth request for replay protection. */
+  nonce: string | undefined;
 }
 
 function base64UrlDecode(segment: string): string {
@@ -42,6 +44,7 @@ export function decodeClaims(token: string): UserClaims {
     email: undefined,
     permissions: [],
     expiresAt: undefined,
+    nonce: undefined,
   };
   const parts = token.split('.');
   if (parts.length < 2 || parts[1] === undefined) return empty;
@@ -70,5 +73,6 @@ export function decodeClaims(token: string): UserClaims {
     email: typeof payload.email === 'string' ? payload.email : undefined,
     permissions: [...new Set(permissions)],
     expiresAt: typeof payload.exp === 'number' ? payload.exp : undefined,
+    nonce: typeof payload.nonce === 'string' ? payload.nonce : undefined,
   };
 }

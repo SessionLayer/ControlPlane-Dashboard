@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { resourceKey, useCursorList } from '../../api/http';
 import { unwrap } from '../../api/problem';
-import { idempotencyHeader } from '../../api/idempotency';
+import { useIdempotencyKey } from '../../api/useIdempotencyKey';
 import type {
   CaResource,
   CreateCaRequest,
@@ -38,15 +38,19 @@ export function useRules() {
 
 export function useCreateRule() {
   const qc = useQueryClient();
+  const idem = useIdempotencyKey();
   return useMutation({
     mutationFn: async (body: CreateRuleRequest) =>
       unwrap(
         await api.POST('/v1/rules', {
           body,
-          params: { header: idempotencyHeader() },
+          params: { header: idem.header() },
         }),
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: resourceKey('rules') }),
+    onSuccess: () => {
+      idem.reset();
+      return qc.invalidateQueries({ queryKey: resourceKey('rules') });
+    },
   });
 }
 
@@ -92,15 +96,19 @@ export function useRoles() {
 
 export function useCreateRole() {
   const qc = useQueryClient();
+  const idem = useIdempotencyKey();
   return useMutation({
     mutationFn: async (body: CreateRoleRequest) =>
       unwrap(
         await api.POST('/v1/roles', {
           body,
-          params: { header: idempotencyHeader() },
+          params: { header: idem.header() },
         }),
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: resourceKey('roles') }),
+    onSuccess: () => {
+      idem.reset();
+      return qc.invalidateQueries({ queryKey: resourceKey('roles') });
+    },
   });
 }
 
@@ -149,16 +157,19 @@ export function useRoleBindings() {
 
 export function useCreateRoleBinding() {
   const qc = useQueryClient();
+  const idem = useIdempotencyKey();
   return useMutation({
     mutationFn: async (body: CreateRoleBindingRequest) =>
       unwrap(
         await api.POST('/v1/role-bindings', {
           body,
-          params: { header: idempotencyHeader() },
+          params: { header: idem.header() },
         }),
       ),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: resourceKey('role-bindings') }),
+    onSuccess: () => {
+      idem.reset();
+      return qc.invalidateQueries({ queryKey: resourceKey('role-bindings') });
+    },
   });
 }
 
@@ -208,15 +219,19 @@ export function useCas() {
 
 export function useCreateCa() {
   const qc = useQueryClient();
+  const idem = useIdempotencyKey();
   return useMutation({
     mutationFn: async (body: CreateCaRequest) =>
       unwrap(
         await api.POST('/v1/cas', {
           body,
-          params: { header: idempotencyHeader() },
+          params: { header: idem.header() },
         }),
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: resourceKey('cas') }),
+    onSuccess: () => {
+      idem.reset();
+      return qc.invalidateQueries({ queryKey: resourceKey('cas') });
+    },
   });
 }
 
@@ -248,15 +263,19 @@ export function useDeleteCa() {
 
 export function useRotateCa() {
   const qc = useQueryClient();
+  const idem = useIdempotencyKey();
   return useMutation({
     mutationFn: async ({ id, body }: { id: string; body: RotateCaRequest }) =>
       unwrap(
         await api.POST('/v1/cas/{caId}/rotate', {
-          params: { path: { caId: id }, header: idempotencyHeader() },
+          params: { path: { caId: id }, header: idem.header() },
           body,
         }),
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: resourceKey('cas') }),
+    onSuccess: () => {
+      idem.reset();
+      return qc.invalidateQueries({ queryKey: resourceKey('cas') });
+    },
   });
 }
 
@@ -277,16 +296,21 @@ export function useServiceAccounts() {
 
 export function useCreateServiceAccount() {
   const qc = useQueryClient();
+  const idem = useIdempotencyKey();
   return useMutation({
     mutationFn: async (body: CreateServiceAccountRequest) =>
       unwrap(
         await api.POST('/v1/service-accounts', {
           body,
-          params: { header: idempotencyHeader() },
+          params: { header: idem.header() },
         }),
       ),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: resourceKey('service-accounts') }),
+    onSuccess: () => {
+      idem.reset();
+      return qc.invalidateQueries({
+        queryKey: resourceKey('service-accounts'),
+      });
+    },
   });
 }
 

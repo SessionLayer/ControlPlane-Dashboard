@@ -1,11 +1,20 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import type { ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
 
-import { seedAuth, testOidcConfig } from '../test/utils';
+import { server } from '../test/server';
+import { makeTestJwt, seedAuth, testOidcConfig } from '../test/utils';
 import { AuthProvider, useAuth } from './AuthContext';
 import type { OidcConfig } from './config';
+
+function primeTransient(nonce: string): void {
+  sessionStorage.setItem(
+    'sl.oidc.pkce',
+    JSON.stringify({ verifier: 'v', state: 's', nonce }),
+  );
+}
 
 function wrapper(config: OidcConfig) {
   return function Wrap({ children }: { children: ReactNode }) {
@@ -51,6 +60,40 @@ describe('AuthContext RBAC-aware affordances', () => {
     });
     expect(result.current.configured).toBe(false);
     await expect(result.current.login()).rejects.toThrow(/not configured/i);
+  });
+
+  it('accepts a callback whose ID-token nonce matches (F-sec-2)', async () => {
+    server.use(
+      http.post(testOidcConfig.tokenEndpoint, () =>
+        HttpResponse.json({ id_token: makeTestJwt({ sub: 'a', nonce: 'N1' }) }),
+      ),
+    );
+    const { result } = renderHook(() => useAuth(), {
+      wrapper: wrapper(testOidcConfig),
+    });
+    primeTransient('N1');
+    await act(async () => {
+      await result.current.completeCallback('?code=c&state=s');
+    });
+    expect(result.current.status).toBe('authenticated');
+  });
+
+  it('rejects a callback whose ID-token nonce does not match (F-sec-2)', async () => {
+    server.use(
+      http.post(testOidcConfig.tokenEndpoint, () =>
+        HttpResponse.json({
+          id_token: makeTestJwt({ sub: 'a', nonce: 'ATTACKER' }),
+        }),
+      ),
+    );
+    const { result } = renderHook(() => useAuth(), {
+      wrapper: wrapper(testOidcConfig),
+    });
+    primeTransient('N1');
+    await expect(
+      result.current.completeCallback('?code=c&state=s'),
+    ).rejects.toThrow(/nonce mismatch/i);
+    expect(result.current.status).toBe('unauthenticated');
   });
 
   it('rejects a callback whose state does not match (CSRF guard)', async () => {

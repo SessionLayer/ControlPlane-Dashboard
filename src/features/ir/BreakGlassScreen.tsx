@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 
 import type {
   BreakglassActivationResource,
@@ -43,9 +43,31 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'offline-codes', label: 'Offline codes' },
 ];
 
+const PANEL_ID = 'bg-tabpanel';
+const tabButtonId = (id: TabId) => `bg-tab-${id}`;
+
 export function BreakGlassScreen() {
   const [tab, setTab] = useState<TabId>('activations');
   const canManage = useCan('breakglass:manage');
+  const tabRefs = useRef(new Map<TabId, HTMLButtonElement>());
+
+  // WAI-ARIA tabs keyboard model: Left/Right cycle, Home/End jump; the newly
+  // selected tab both activates and takes focus (roving tabindex).
+  const onTabKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const idx = TABS.findIndex((t) => t.id === tab);
+    let next = idx;
+    if (e.key === 'ArrowRight') next = (idx + 1) % TABS.length;
+    else if (e.key === 'ArrowLeft')
+      next = (idx - 1 + TABS.length) % TABS.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = TABS.length - 1;
+    else return;
+    const target = TABS[next];
+    if (target === undefined) return;
+    e.preventDefault();
+    setTab(target.id);
+    tabRefs.current.get(target.id)?.focus();
+  };
 
   return (
     <section className="stack">
@@ -54,26 +76,47 @@ export function BreakGlassScreen() {
         description="Emergency access: activations under mandatory review, registered credentials, and offline codes (Design §7, FR-ACC-6)."
       />
 
-      <div className="ir-tabs" role="tablist" aria-label="Break-glass sections">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.id}
-            className="ir-tab"
-            onClick={() => {
-              setTab(t.id);
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div
+        className="ir-tabs"
+        role="tablist"
+        aria-label="Break-glass sections"
+        onKeyDown={onTabKeyDown}
+      >
+        {TABS.map((t) => {
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              ref={(el) => {
+                if (el !== null) tabRefs.current.set(t.id, el);
+              }}
+              id={tabButtonId(t.id)}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              aria-controls={PANEL_ID}
+              tabIndex={active ? 0 : -1}
+              className="ir-tab"
+              onClick={() => {
+                setTab(t.id);
+              }}
+            >
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
-      {tab === 'activations' && <ActivationsTab canManage={canManage} />}
-      {tab === 'credentials' && <CredentialsTab canManage={canManage} />}
-      {tab === 'offline-codes' && <OfflineCodesTab canManage={canManage} />}
+      <div
+        id={PANEL_ID}
+        role="tabpanel"
+        aria-labelledby={tabButtonId(tab)}
+        tabIndex={0}
+      >
+        {tab === 'activations' && <ActivationsTab canManage={canManage} />}
+        {tab === 'credentials' && <CredentialsTab canManage={canManage} />}
+        {tab === 'offline-codes' && <OfflineCodesTab canManage={canManage} />}
+      </div>
     </section>
   );
 }

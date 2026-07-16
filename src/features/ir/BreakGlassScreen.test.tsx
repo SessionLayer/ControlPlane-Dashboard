@@ -96,6 +96,48 @@ describe('BreakGlassScreen — activations', () => {
   });
 });
 
+describe('BreakGlassScreen — tab a11y', () => {
+  it('follows the WAI-ARIA tabs contract with arrow-key navigation', async () => {
+    server.use(
+      http.get(cp('/v1/breakglass/activations'), () => ok({ activations: [] })),
+      http.get(cp('/v1/breakglass/credentials'), () => ok({ credentials: [] })),
+    );
+    renderWithProviders(<BreakGlassScreen />, {
+      authenticated: true,
+      permissions: [...MANAGE],
+    });
+
+    const tablist = screen.getByRole('tablist', {
+      name: 'Break-glass sections',
+    });
+    const activations = screen.getByRole('tab', { name: 'Activations' });
+    const credentials = screen.getByRole('tab', { name: 'Credentials' });
+
+    // Roving tabindex: only the active tab is in the tab order.
+    expect(activations).toHaveAttribute('aria-selected', 'true');
+    expect(activations).toHaveAttribute('tabindex', '0');
+    expect(credentials).toHaveAttribute('tabindex', '-1');
+
+    const panel = screen.getByRole('tabpanel');
+    expect(panel).toHaveAttribute('aria-labelledby', activations.id);
+    expect(activations).toHaveAttribute('aria-controls', panel.id);
+
+    fireEvent.keyDown(tablist, { key: 'ArrowRight' });
+
+    expect(credentials).toHaveAttribute('aria-selected', 'true');
+    expect(credentials).toHaveAttribute('tabindex', '0');
+    expect(activations).toHaveAttribute('tabindex', '-1');
+    expect(panel).toHaveAttribute('aria-labelledby', credentials.id);
+    expect(
+      await screen.findByText('No break-glass credentials registered.'),
+    ).toBeInTheDocument();
+
+    // Home returns to the first tab.
+    fireEvent.keyDown(tablist, { key: 'Home' });
+    expect(activations).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
 describe('BreakGlassScreen — credentials', () => {
   it('registers a credential, then revokes it', async () => {
     let creds: Record<string, unknown>[] = [];

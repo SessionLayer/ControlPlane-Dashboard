@@ -64,7 +64,7 @@ export function AppShell() {
           ))}
         </nav>
 
-        <main id="main" className="app-main">
+        <main id="main" className="app-main" tabIndex={-1}>
           <Outlet />
         </main>
       </div>

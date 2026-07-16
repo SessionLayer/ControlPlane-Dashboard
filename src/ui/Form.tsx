@@ -2,6 +2,36 @@ import { useId, useState, type ReactNode, type KeyboardEvent } from 'react';
 
 import { Button } from './Button';
 
+function hasErrorValue(error: ReactNode): boolean {
+  return error !== undefined && error !== null && error !== '';
+}
+
+/**
+ * ARIA wiring for a control: links its hint/error to it (`aria-describedby`),
+ * marks invalidity and requiredness. Spread onto the input/select/textarea so
+ * assistive tech announces state, not just the visual asterisk (WCAG 3.3.1/4.1.2).
+ */
+export function fieldAria(
+  id: string,
+  hint: ReactNode,
+  error: ReactNode,
+  required?: boolean,
+): {
+  'aria-describedby': string | undefined;
+  'aria-invalid': true | undefined;
+  'aria-required': true | undefined;
+} {
+  const ids = [
+    hint !== undefined ? `${id}-hint` : undefined,
+    hasErrorValue(error) ? `${id}-error` : undefined,
+  ].filter((v): v is string => v !== undefined);
+  return {
+    'aria-describedby': ids.length > 0 ? ids.join(' ') : undefined,
+    'aria-invalid': hasErrorValue(error) ? true : undefined,
+    'aria-required': required === true ? true : undefined,
+  };
+}
+
 /** Label + control + optional hint/error, wired for a11y via a shared id. */
 export function Field({
   label,
@@ -25,9 +55,13 @@ export function Field({
         {required === true && <span aria-hidden="true"> *</span>}
       </label>
       {children}
-      {hint !== undefined && <p className="field-hint muted">{hint}</p>}
-      {error !== undefined && error !== null && error !== '' && (
-        <p className="field-error error" role="alert">
+      {hint !== undefined && (
+        <p id={`${htmlFor}-hint`} className="field-hint muted">
+          {hint}
+        </p>
+      )}
+      {hasErrorValue(error) && (
+        <p id={`${htmlFor}-error`} className="field-error error" role="alert">
           {error}
         </p>
       )}
@@ -72,6 +106,7 @@ export function TextField({
         value={value}
         placeholder={placeholder}
         autoComplete={autoComplete}
+        {...fieldAria(id, hint, error, required)}
         onChange={(e) => {
           onChange(e.target.value);
         }}
@@ -115,6 +150,7 @@ export function NumberField({
         value={value}
         min={min}
         max={max}
+        {...fieldAria(id, hint, error, required)}
         onChange={(e) => {
           onChange(e.target.value === '' ? '' : Number(e.target.value));
         }}
@@ -156,6 +192,7 @@ export function TextareaField({
         className={monospace ? 'input mono' : 'input'}
         rows={rows}
         value={value}
+        {...fieldAria(id, hint, error, required)}
         onChange={(e) => {
           onChange(e.target.value);
         }}
@@ -194,6 +231,7 @@ export function SelectField<T extends string>({
         id={id}
         className="input"
         value={value}
+        {...fieldAria(id, hint, error, required)}
         onChange={(e) => {
           onChange(e.target.value as T);
         }}

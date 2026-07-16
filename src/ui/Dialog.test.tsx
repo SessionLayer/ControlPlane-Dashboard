@@ -36,4 +36,28 @@ describe('Dialog', () => {
     fireEvent.click(screen.getByLabelText('Close dialog'));
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('traps Tab focus within the dialog (F-ux-2)', () => {
+    render(
+      <Dialog
+        title="Edit"
+        onClose={() => undefined}
+        footer={<button type="button">Save</button>}
+      >
+        <button type="button">Field</button>
+      </Dialog>,
+    );
+    const close = screen.getByLabelText('Close dialog');
+    const save = screen.getByRole('button', { name: 'Save' });
+
+    // Tab off the last focusable wraps to the first (the close button).
+    save.focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(document.activeElement).toBe(close);
+
+    // Shift+Tab off the first wraps to the last.
+    close.focus();
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(save);
+  });
 });

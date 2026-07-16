@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button, Dialog, LoadingState } from '../../ui';
 import { ProblemError } from '../../api/problem';
@@ -37,21 +37,32 @@ export function ExportDialog({
   const [error, setError] = useState<unknown>();
   const [done, setDone] = useState(false);
 
+  // Guard against a close mid-decrypt: don't trigger a surprise download or set
+  // state after the dialog has unmounted.
+  const cancelled = useRef(false);
+  useEffect(() => {
+    cancelled.current = false;
+    return () => {
+      cancelled.current = true;
+    };
+  }, []);
+
   const run = () => {
     if (key === undefined) return;
     setBusy(true);
     setError(undefined);
     setDone(false);
-    void loadExportBytes(recording.id, key)
+    void loadExportBytes(recording.id, key, recording.sizeBytes)
       .then((bytes) => {
+        if (cancelled.current) return;
         downloadBytes(bytes, `${recording.id}.cast`);
         setDone(true);
       })
       .catch((e: unknown) => {
-        setError(e);
+        if (!cancelled.current) setError(e);
       })
       .finally(() => {
-        setBusy(false);
+        if (!cancelled.current) setBusy(false);
       });
   };
 
@@ -59,9 +70,10 @@ export function ExportDialog({
     <Dialog
       title="Export recording"
       onClose={onClose}
+      size="wide"
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
             Close
           </Button>
           <Button
