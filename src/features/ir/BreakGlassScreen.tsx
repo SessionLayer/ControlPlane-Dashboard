@@ -55,7 +55,7 @@ export function BreakGlassScreen() {
   // selected tab both activates and takes focus (roving tabindex).
   const onTabKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const idx = TABS.findIndex((t) => t.id === tab);
-    let next = idx;
+    let next: number;
     if (e.key === 'ArrowRight') next = (idx + 1) % TABS.length;
     else if (e.key === 'ArrowLeft')
       next = (idx - 1 + TABS.length) % TABS.length;
