@@ -1,0 +1,112 @@
+# Supply-chain release pipeline (S22): SBOM + SLSA provenance + keyless Sigstore
+# signature + a reproducibility gate for the dist bundle. Separate from `ci.yml`
+# (the required `gate` check) — this runs only on a `v*` tag push. Actions are
+# SHA-pinned; the trailing comment records the human tag. See
+# ../../Docs/sessions/twentytwo/SUPPLY-CHAIN.md.
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # gh release create/upload
+      id-token: write # keyless cosign + provenance via ambient GitHub OIDC
+      attestations: write # actions/attest-build-provenance
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve artifact names and reproducible epoch
+        run: |
+          VER=${GITHUB_REF_NAME#v}
+          echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
+          echo "TARBALL=controlplane-dashboard-${VER}-dist.tgz" >> "$GITHUB_ENV"
+          echo "SBOM=controlplane-dashboard-${VER}-sbom.cdx.json" >> "$GITHUB_ENV"
+
+      - name: Build and package dist
+        run: |
+          npm run build
+          ./scripts/pack-dist.sh "$TARBALL"
+
+      # Part D: rebuild in a clean tree and assert an identical tarball digest.
+      - name: Reproducibility gate
+        run: |
+          sha256sum "$TARBALL" | awk '{print $1}' > first.sha256
+          rm -rf dist "$TARBALL"
+          npm run build
+          ./scripts/pack-dist.sh "$TARBALL"
+          sha256sum "$TARBALL" | awk '{print $1}' > second.sha256
+          if ! diff -q first.sha256 second.sha256 >/dev/null; then
+            echo "::error::dist tarball is not reproducible ($(cat first.sha256) != $(cat second.sha256))"
+            exit 1
+          fi
+          echo "reproducible sha256: $(cat first.sha256)"
+
+      # Part A: CycloneDX 1.6 JSON. --output-reproducible drops metadata.timestamp
+      # and serialNumber so the SBOM itself is byte-stable.
+      - name: Generate SBOM
+        run: |
+          npm run sbom
+          cp sbom.cdx.json "$SBOM"
+          jq -e '.bomFormat=="CycloneDX" and .specVersion=="1.6" and (.components|length>0)' "$SBOM" >/dev/null
+
+      # Part B: SLSA v1 provenance over the tarball + SBOM (Rekor-logged bundle).
+      - name: Attest build provenance
+        id: attest
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
+        with:
+          subject-path: |
+            ${{ env.TARBALL }}
+            ${{ env.SBOM }}
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62 # v3.10.0
+
+      # Part C: keyless blob signature over the tarball + SBOM. No key at rest; the
+      # signing identity is this workflow's GitHub OIDC (Fulcio-issued short-lived
+      # cert). Emits .sig + .pem + the Sigstore bundle.
+      - name: Sign artifact and SBOM
+        env:
+          COSIGN_YES: 'true'
+        run: |
+          for f in "$TARBALL" "$SBOM"; do
+            cosign sign-blob --yes \
+              --output-signature "${f}.sig" \
+              --output-certificate "${f}.pem" \
+              --bundle "${f}.sigstore.json" \
+              "$f"
+          done
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="$GITHUB_REF_NAME"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --generate-notes
+          gh release upload "$TAG" \
+            "$TARBALL" "${TARBALL}.sig" "${TARBALL}.pem" "${TARBALL}.sigstore.json" \
+            "$SBOM" "${SBOM}.sig" "${SBOM}.pem" "${SBOM}.sigstore.json" \
+            "${{ steps.attest.outputs.bundle-path }}" \
+            --clobber

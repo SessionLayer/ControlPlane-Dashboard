@@ -19,7 +19,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "generate:api": "openapi-typescript openapi/openapi.yaml --output src/api/schema.d.ts",
-    "sync-contracts": "scripts/sync-contracts.sh"
+    "sync-contracts": "scripts/sync-contracts.sh",
+    "sbom": "cyclonedx-npm --output-format JSON --spec-version 1.6 --output-reproducible --output-file sbom.cdx.json"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.0",
@@ -29,6 +30,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@cyclonedx/cyclonedx-npm": "6.0.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.49.0",
     "@testing-library/jest-dom": "^6.6.0",
