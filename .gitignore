@@ -24,3 +24,10 @@ blob-report/
 
 # Vite cache
 .vite/
+
+# Release supply-chain artifacts (S22): SBOM, dist tarball, cosign outputs — CI-produced
+sbom.cdx.json
+*.cdx.json
+*.tgz
+*.sig
+*.sigstore.json
