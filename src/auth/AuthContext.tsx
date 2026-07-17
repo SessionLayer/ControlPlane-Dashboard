@@ -58,8 +58,13 @@ export function AuthProvider({
   redirect?: (url: string) => void;
 }) {
   const bearer = useSyncExternalStore(subscribeBearer, getBearer, getBearer);
+  // Latest-ref pattern: keep the newest `redirect` without making the callbacks
+  // below depend on it. The write happens after commit (an effect) rather than
+  // during render, which is only read from event handlers (login/callback).
   const redirectRef = useRef(redirect);
-  redirectRef.current = redirect;
+  useEffect(() => {
+    redirectRef.current = redirect;
+  }, [redirect]);
 
   const user = useMemo(
     () => (bearer !== undefined ? decodeClaims(bearer) : undefined),

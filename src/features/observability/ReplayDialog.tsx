@@ -54,29 +54,29 @@ export function ReplayDialog({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (key === undefined) {
-      setCast(undefined);
-      setError(undefined);
-      setLoading(false);
-      return;
-    }
+    if (key === undefined) return;
     let cancelled = false;
-    setLoading(true);
-    setError(undefined);
-    setCast(undefined);
-    void loadReplayCast(recording.id, key, recording.sizeBytes)
-      .then((c) => {
+    // The decrypt runs in an async function so state transitions happen off the
+    // synchronous effect body. Plaintext stays in this dialog's local state
+    // (cleared on unmount) — never a shared cache — per the §12.2 crown-jewels rule.
+    const run = async () => {
+      setLoading(true);
+      setError(undefined);
+      setCast(undefined);
+      try {
+        const c = await loadReplayCast(recording.id, key, recording.sizeBytes);
         if (!cancelled) {
           setCast(c);
           setLoading(false);
         }
-      })
-      .catch((e: unknown) => {
+      } catch (e) {
         if (!cancelled) {
           setError(e);
           setLoading(false);
         }
-      });
+      }
+    };
+    void run();
     return () => {
       cancelled = true;
     };
@@ -89,15 +89,18 @@ export function ReplayDialog({
       <div className="replay-dialog">
         <KeyInput keyState={keyState} />
 
-        {key === undefined && (
+        {key === undefined ? (
           <p className="muted">
             Load your customer private key above to decrypt and replay this
             recording.
           </p>
+        ) : (
+          <>
+            {loading && <LoadingState label="Decrypting recording…" />}
+            {error !== undefined && <DecryptError error={error} />}
+            {cast !== undefined && <ReplayPlayer cast={cast} />}
+          </>
         )}
-        {loading && <LoadingState label="Decrypting recording…" />}
-        {error !== undefined && <DecryptError error={error} />}
-        {cast !== undefined && <ReplayPlayer cast={cast} />}
       </div>
     </Dialog>
   );

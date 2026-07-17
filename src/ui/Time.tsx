@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
   ['year', 31_536_000_000],
   ['month', 2_592_000_000],
@@ -25,6 +27,9 @@ function relative(from: number, now: number): string {
  * values render an em dash rather than "Invalid Date".
  */
 export function Time({ value }: { value: string | undefined | null }) {
+  // Snapshot the clock once per mount: reading Date.now() during render is
+  // impure. This is a point-in-time relative label, not a ticking one.
+  const [now] = useState(() => Date.now());
   if (value === undefined || value === null || value === '') {
     return <span className="muted">—</span>;
   }
@@ -34,7 +39,7 @@ export function Time({ value }: { value: string | undefined | null }) {
   }
   return (
     <time dateTime={value} title={new Date(ms).toISOString()}>
-      {relative(ms, Date.now())}
+      {relative(ms, now)}
     </time>
   );
 }
