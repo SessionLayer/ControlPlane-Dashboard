@@ -40,20 +40,27 @@ Prettier and must match the generator verbatim.
   mode) and is overridable at build time via `VITE_CP_BASE_URL`. No secrets in the
   repo or the bundle.
 
-## Security posture (and deferred hardening)
+## Security posture
 
 Reviewed by red-team + security-reviewer at scaffold time — zero medium+ findings.
 Points carried forward:
 
-- **Production serving layer must send security headers** the static bundle
-  cannot set itself: a strict `Content-Security-Policy` (`default-src 'self'`,
-  `connect-src` limited to the Control Plane origin, `frame-ancestors 'none'`),
-  HSTS, and `X-Content-Type-Options: nosniff`. This is a hosting/reverse-proxy
-  responsibility, tracked for the deployment story — not baked into `index.html`.
-- **`VITE_CP_BASE_URL` must be `https://` in production.** The default
-  `http://localhost:8080` is for single-instance local dev only; an empty value
-  falls back to that default. When auth lands, add a build-time assertion that a
-  non-localhost base is `https://`.
+- **Production serving layer sends the security headers** the static bundle cannot
+  set itself — **delivered** as a reference serving layer under `deploy/`
+  (`security-headers.conf`, `nginx.conf`, `_headers`, `Dockerfile`): a strict
+  `Content-Security-Policy` (`default-src 'self'`, `script-src`/`style-src 'self'`
+  with no `'unsafe-inline'`, `frame-ancestors 'none'`, `object-src 'none'`), HSTS,
+  and `X-Content-Type-Options: nosniff`. `connect-src` is `'self'` plus deploy-time
+  placeholders for the CP / OIDC / object-store origins the app fetches from.
+  Enforced only by the serving layer (not `index.html`); proven by
+  `e2e/csp.spec.ts` + `deploy/headers.test.ts`. See `deploy/README.md`,
+  `audit/F-headers-1.md`.
+- **`VITE_CP_BASE_URL` must be `https://` in production** — **enforced at build
+  time** by `deploy/httpsGuard.ts` (a Vite plugin wired in `vite.config.ts`), which
+  fails `vite build` when `VITE_CP_BASE_URL` or any `VITE_OIDC_*` endpoint is a
+  non-localhost cleartext value; `src/api/client.ts` keeps the runtime backstop.
+  `http://localhost` / `127.0.0.1` and an empty value (→ the localhost default) are
+  exempt. See `audit/F-net-1.md`.
 - **Future auth (Session 17):** inject OIDC-bearer / mTLS credentials via an
   in-memory `openapi-fetch` middleware — **never** `localStorage`/`sessionStorage`
   (XSS-exfiltratable). Do not set `credentials: 'include'` cross-origin without a
