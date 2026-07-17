@@ -33,7 +33,18 @@ endpoint is a non-localhost cleartext `http://` value. It covers not just
 endpoints (which carry the PKCE code exchange) — a plaintext OIDC endpoint in prod
 is as dangerous as a plaintext CP base. `localhost`/`127.0.0.1`/`[::1]` and
 unset/empty are exempt so single-instance dev and the E2E build still pass.
-`src/api/client.ts` keeps the runtime backstop for the CP base. Verified by
+The runtime backstop covers the CP base (`src/api/client.ts`) AND the OIDC
+endpoints (`src/auth/config.ts` throws in a production bundle if any is a cleartext
+non-loopback value), so a plugin-less build cannot silently ship an insecure
+endpoint. Scheme comparison is via the URL parser (`protocol === 'https:'`), so an
+uppercase `HTTPS://` is accepted and a malformed value fails closed. Verified by
 building with a bad base (fails) and localhost/https bases (pass), and by the pure
-`httpsBaseViolations()` unit tests in `deploy/headers.test.ts`. See
+`httpsBaseViolations()` / `insecureEndpointError()` unit tests
+(`deploy/headers.test.ts`, `src/api/prodBaseUrl.test.ts`).
+
+T3 review (Session 21): confirmed no bypass — `localhost.attacker.com`,
+`127.0.0.1.evil.com`, and octal-IPv4 are all treated as non-loopback and require
+https. Follow-ups addressed: `VITE_OIDC_REDIRECT_URI` added to the guarded set,
+the case-sensitive `startsWith` replaced with a URL-parser scheme check, and the
+runtime backstop extended to the OIDC endpoints. See
 [F-headers-1](./F-headers-1.md) for the companion serving-layer headers.

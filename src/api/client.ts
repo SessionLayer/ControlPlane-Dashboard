@@ -1,7 +1,7 @@
 import createClient, { type Middleware } from 'openapi-fetch';
 
 import type { paths } from './schema';
-import { insecureProdBaseError } from './prodBaseUrl';
+import { insecureEndpointError } from './prodBaseUrl';
 import { getBearer, notifyUnauthorized } from '../auth/tokenStore';
 
 /**
@@ -21,7 +21,7 @@ export const CP_BASE_URL: string =
 // vite.config.ts is the primary gate; this catches a bundle handed a bad base at
 // serve time). The http://localhost default is single-instance local dev only.
 if (import.meta.env.PROD) {
-  const insecure = insecureProdBaseError(CP_BASE_URL);
+  const insecure = insecureEndpointError('VITE_CP_BASE_URL', CP_BASE_URL);
   if (insecure !== undefined) {
     throw new Error(insecure);
   }

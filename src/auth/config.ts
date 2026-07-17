@@ -5,6 +5,8 @@
  * (`VITE_OIDC_*`); the authorize/token endpoints default to conventional paths
  * derived from the issuer when not given explicitly.
  */
+import { insecureEndpointError } from '../api/prodBaseUrl';
+
 export interface OidcConfig {
   issuer: string;
   clientId: string;
@@ -29,7 +31,7 @@ function defaultRedirectUri(): string {
 export function loadOidcConfig(): OidcConfig {
   const issuer = env('VITE_OIDC_ISSUER') ?? '';
   const base = issuer.replace(/\/$/, '');
-  return {
+  const config: OidcConfig = {
     issuer,
     clientId: env('VITE_OIDC_CLIENT_ID') ?? 'sessionlayer-dashboard',
     redirectUri: env('VITE_OIDC_REDIRECT_URI') ?? defaultRedirectUri(),
@@ -39,6 +41,21 @@ export function loadOidcConfig(): OidcConfig {
       env('VITE_OIDC_TOKEN_ENDPOINT') ?? (base ? `${base}/oauth2/token` : ''),
     scope: env('VITE_OIDC_SCOPE') ?? 'openid profile email',
   };
+  // Runtime backstop (companion to the build-time deploy/httpsGuard.ts): a
+  // production bundle must not carry a cleartext non-loopback OIDC endpoint — the
+  // authorization code and token exchange would ride http. Fail closed at load.
+  if (import.meta.env.PROD) {
+    for (const [name, url] of [
+      ['VITE_OIDC_ISSUER', config.issuer],
+      ['VITE_OIDC_AUTHORIZE_ENDPOINT', config.authorizeEndpoint],
+      ['VITE_OIDC_TOKEN_ENDPOINT', config.tokenEndpoint],
+      ['VITE_OIDC_REDIRECT_URI', config.redirectUri],
+    ] as const) {
+      const insecure = insecureEndpointError(name, url);
+      if (insecure !== undefined) throw new Error(insecure);
+    }
+  }
+  return config;
 }
 
 /** True when enough is configured to start an interactive OIDC redirect. */

@@ -18,25 +18,21 @@ const HTTPS_REQUIRED_VARS = [
   'VITE_OIDC_ISSUER',
   'VITE_OIDC_AUTHORIZE_ENDPOINT',
   'VITE_OIDC_TOKEN_ENDPOINT',
+  'VITE_OIDC_REDIRECT_URI',
 ] as const;
 
-function isLocalhost(value: string): boolean {
-  try {
-    const { hostname } = new URL(value);
-    return (
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      hostname === '[::1]'
-    );
-  } catch {
-    return false;
-  }
+function isLoopback(hostname: string): boolean {
+  return (
+    hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]'
+  );
 }
 
 /**
- * One message per credential-bearing var that is a non-localhost, non-`https://`
+ * One message per credential-bearing var that is a non-localhost, non-`https:`
  * value. Empty/unset values are skipped (they fall back to the localhost dev
- * default). A pure function so the gate can test it without invoking a build.
+ * default); a non-empty unparseable value fails closed. Scheme comparison is via
+ * the URL parser (so an uppercase `HTTPS://` is accepted). A pure function so the
+ * gate can test it without invoking a build.
  */
 export function httpsBaseViolations(
   env: Record<string, string | undefined>,
@@ -45,8 +41,17 @@ export function httpsBaseViolations(
   for (const name of HTTPS_REQUIRED_VARS) {
     const value = env[name]?.trim();
     if (value === undefined || value.length === 0) continue;
-    if (isLocalhost(value)) continue;
-    if (!value.startsWith('https://')) {
+    let parsed: URL;
+    try {
+      parsed = new URL(value);
+    } catch {
+      violations.push(
+        `${name} must be a valid https:// URL in a production build (got "${value}")`,
+      );
+      continue;
+    }
+    if (isLoopback(parsed.hostname)) continue;
+    if (parsed.protocol !== 'https:') {
       violations.push(
         `${name} must be https:// in a production build (got "${value}")`,
       );

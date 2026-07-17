@@ -105,19 +105,30 @@ describe('build-time https guard (F-net-1)', () => {
     ).toHaveLength(1);
   });
 
-  it('fires on an insecure OIDC issuer too (the PKCE exchange is a secret)', () => {
+  it('fires on an insecure OIDC issuer AND redirect_uri (both carry secrets)', () => {
     expect(
       httpsBaseViolations({ VITE_OIDC_ISSUER: 'http://idp.prod.example' }),
     ).toHaveLength(1);
+    expect(
+      httpsBaseViolations({
+        VITE_OIDC_REDIRECT_URI: 'http://app.prod.example/auth/callback',
+      }),
+    ).toHaveLength(1);
   });
 
-  it('passes https prod endpoints', () => {
+  it('passes https prod endpoints, including an uppercase HTTPS:// scheme', () => {
     expect(
       httpsBaseViolations({
         VITE_CP_BASE_URL: 'https://cp.prod.example',
-        VITE_OIDC_ISSUER: 'https://idp.prod.example',
+        VITE_OIDC_ISSUER: 'HTTPS://idp.prod.example',
       }),
     ).toEqual([]);
+  });
+
+  it('fails closed on a malformed non-empty value', () => {
+    expect(httpsBaseViolations({ VITE_CP_BASE_URL: 'not a url' })).toHaveLength(
+      1,
+    );
   });
 
   it('exempts localhost and unset (the single-instance dev default)', () => {

@@ -1,22 +1,38 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const APP_ORIGIN = 'http://localhost:4173';
+import {
+  EXPECTED_MARKER,
+  EXPECTED_OUTPUT,
+  KEY_PEM,
+  SEALED_B64,
+  SEALED_SIZE,
+} from './replayFixture';
 
-// The strict production CSP (deploy/security-headers.conf) with connect-src
-// resolved to the origins THIS test's mocked backends live on: the default CP
-// base and the E2E OIDC issuer (playwright.config.ts). Crucially style-src is
-// 'self' with NO 'unsafe-inline' — this test proves that holds for the real app.
+const APP_ORIGIN = 'http://localhost:4173';
+const CP_ORIGIN = 'http://localhost:8080'; // the baked-in dev default (loopback)
+const IDP_ORIGIN = 'https://idp.example.test'; // playwright.config VITE_OIDC_ISSUER
+const OBJECT_STORE_ORIGIN = 'https://objects.example.test';
+const OBJECT_URL = `${OBJECT_STORE_ORIGIN}/rec`;
+
+// Mirrors deploy/security-headers.conf EXACTLY (worker-src/frame-src 'none',
+// upgrade-insecure-requests included), with the three connect-src placeholders
+// resolved to the origins this test's mocked backends live on — the CP (loopback,
+// exempt from UIR), the OIDC issuer, and the object store. If the shipped policy
+// and this string drift, a real regression surfaces as a CSP violation below.
 const STRICT_CSP = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self'",
   "img-src 'self' data:",
   "font-src 'self'",
-  "connect-src 'self' http://localhost:8080 https://idp.example.test",
+  `connect-src 'self' ${CP_ORIGIN} ${IDP_ORIGIN} ${OBJECT_STORE_ORIGIN}`,
+  "frame-src 'none'",
   "frame-ancestors 'none'",
-  "object-src 'none'",
-  "base-uri 'self'",
   "form-action 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "worker-src 'none'",
+  'upgrade-insecure-requests',
 ].join('; ');
 
 const CORS = { 'access-control-allow-origin': '*' };
@@ -70,7 +86,32 @@ async function readViolations(page: Page): Promise<string[]> {
   );
 }
 
-async function stubControlPlane(page: Page): Promise<void> {
+/** Land authenticated (auth-code + PKCE, all mocked) under the enforced CSP. */
+async function signIn(page: Page): Promise<void> {
+  await page.route('**/authorize?*', (route) => {
+    const state =
+      new URL(route.request().url()).searchParams.get('state') ?? '';
+    return route.fulfill({
+      status: 302,
+      headers: {
+        location: `${APP_ORIGIN}/auth/callback?code=fake-auth-code&state=${state}`,
+      },
+    });
+  });
+  await page.route('**/oauth2/token', (route) =>
+    route.fulfill({
+      json: { id_token: testJwt(), token_type: 'Bearer', expires_in: 3600 },
+      headers: CORS,
+    }),
+  );
+
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page.getByText('E2E Admin')).toBeVisible();
+}
+
+async function stubMeta(page: Page): Promise<void> {
   await page.route('**/v1/version', (route) =>
     route.fulfill({
       json: {
@@ -98,35 +139,89 @@ test('the app loads and authenticates under the strict production CSP with zero 
 }) => {
   await captureViolations(page);
   await enforceCsp(page);
-  await stubControlPlane(page);
+  await stubMeta(page);
 
-  await page.route('**/authorize?*', (route) => {
-    const state =
-      new URL(route.request().url()).searchParams.get('state') ?? '';
-    return route.fulfill({
-      status: 302,
-      headers: {
-        location: `${APP_ORIGIN}/auth/callback?code=fake-auth-code&state=${state}`,
-      },
-    });
+  await signIn(page);
+  await expect(page.getByRole('link', { name: 'Nodes' })).toBeVisible();
+
+  expect(await readViolations(page)).toEqual([]);
+});
+
+test('a recording replays (object-store fetch + WebCrypto decrypt + terminal render) under the strict CSP with zero violations', async ({
+  page,
+}) => {
+  await captureViolations(page);
+  await enforceCsp(page);
+  await stubMeta(page);
+
+  const recording = {
+    id: '11111111-1111-1111-1111-111111111111',
+    sessionId: '22222222-2222-2222-2222-222222222222',
+    identity: 'alice',
+    nodeId: '33333333-3333-3333-3333-333333333333',
+    format: 'asciicast-v2',
+    status: 'finalized',
+    wormMode: 'governance',
+    sizeBytes: SEALED_SIZE,
+    legalHold: false,
+    retentionUntil: '2027-01-01T00:00:00Z',
+    startedAt: '2026-07-01T00:00:00Z',
+    endedAt: '2026-07-01T00:05:00Z',
+    createdAt: '2026-07-01T00:00:00Z',
+  };
+  // Registered after the generic /v1/** stub, so these take priority.
+  await page.route('**/v1/recordings', (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
+    return route.fulfill({ json: { items: [recording] }, headers: CORS });
   });
-  await page.route('**/oauth2/token', (route) =>
+  await page.route('**/v1/recordings/*/replay', (route) =>
     route.fulfill({
-      json: { id_token: testJwt(), token_type: 'Bearer', expires_in: 3600 },
+      json: {
+        url: OBJECT_URL,
+        method: 'GET',
+        expiresAt: '2030-01-01T00:00:00Z',
+      },
       headers: CORS,
     }),
   );
+  // The still-encrypted object is fetched cross-origin DIRECTLY from the signed
+  // URL — this is the connect-src origin the strict CSP must allow.
+  await page.route(OBJECT_URL, (route) =>
+    route.fulfill({
+      body: Buffer.from(SEALED_B64, 'base64'),
+      headers: { ...CORS, 'content-type': 'application/octet-stream' },
+    }),
+  );
 
-  // Unauthenticated shell first (script-src/style-src 'self' must load the bundle).
-  await page.goto('/');
-  await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
+  await signIn(page);
+  // Navigate CLIENT-SIDE (a full page load would wipe the in-memory-only bearer
+  // and sign us out — that non-persistence is the intended XSS posture).
+  await page.getByRole('link', { name: 'Recordings' }).first().click();
 
-  // Full auth-code + PKCE round-trip, landing on the authenticated shell — which
-  // renders data-driven inline styles (e.g. the overview health bars' flexGrow),
-  // exactly the React style={{}} CSSOM writes we assert style-src 'self' allows.
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByText('E2E Admin')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Nodes' })).toBeVisible();
+  // Load the customer key (in-browser only), then replay: the app decrypts with
+  // WebCrypto and renders the decrypted stream in the terminal player.
+  await page.getByLabel(/Customer private key/i).setInputFiles({
+    name: 'customer.pem',
+    mimeType: 'application/x-pem-file',
+    buffer: Buffer.from(KEY_PEM),
+  });
+  await expect(page.getByText('Key loaded')).toBeVisible();
+  await page.getByRole('button', { name: 'Replay' }).click();
+
+  // The file-transfer marker proves the object decrypted + parsed.
+  await expect(page.getByText(EXPECTED_MARKER)).toBeVisible();
+
+  // Seek to the end and assert the decrypted OUTPUT rendered in the terminal —
+  // the hostile-data rendering path, under style-src 'self' (inline term sizing).
+  await page
+    .getByRole('slider', { name: 'Seek recording' })
+    .evaluate((el, v) => {
+      const input = el as HTMLInputElement;
+      input.value = v;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }, '999');
+  await expect(page.getByText(EXPECTED_OUTPUT)).toBeVisible();
 
   expect(await readViolations(page)).toEqual([]);
 });

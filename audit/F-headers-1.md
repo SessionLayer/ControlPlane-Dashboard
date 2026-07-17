@@ -37,8 +37,15 @@ under `deploy/`:
 
 `style-src` stays strict with no `'unsafe-inline'`: the app's only inline styles
 are React `style={{}}` props (CSSOM property writes), which CSP `style-src` does
-not govern. This is **proven, not assumed** — `e2e/csp.spec.ts` loads the
-authenticated app under this exact CSP and asserts zero `securitypolicyviolation`
-events; `deploy/headers.test.ts` asserts the strict directives are present and
-that `'unsafe-inline'`/`'unsafe-eval'` are absent. See [F-net-1](./F-net-1.md) for
-the companion build-time https assertion.
+not govern. This is **proven, not assumed** — `e2e/csp.spec.ts` enforces a CSP
+that mirrors `security-headers.conf` exactly (`worker-src`/`frame-src 'none'`,
+`upgrade-insecure-requests`, and the object-store `connect-src` origin) and
+asserts zero `securitypolicyviolation`; `deploy/headers.test.ts` asserts the
+strict directives are present and that `'unsafe-inline'`/`'unsafe-eval'` are
+absent. See [F-net-1](./F-net-1.md) for the companion build-time https assertion.
+
+T3 review (Session 21): confirmed no CSP bypass and no WebCrypto/OIDC/replay
+regression. Per the review, the e2e now also drives the **recording-replay** path
+(the most hostile data-rendering surface) — cross-origin object-store fetch → WebCrypto
+decrypt → terminal player render — under the exact strict policy, with zero
+violations, so the test is a real CSP-regression guard, not just a smoke.
