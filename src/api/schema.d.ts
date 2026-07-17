@@ -1730,6 +1730,14 @@ export interface components {
             sourceContextMatch?: boolean;
         };
         /**
+         * Lock Mode
+         * @description Lock enforcement mode (Design §8.3). `strict` tears down matching live
+         *     sessions and blocks new ones; `best_effort` blocks new issuance but does
+         *     not forcibly tear down an already-established session.
+         * @enum {string}
+         */
+        LockMode: "strict" | "best_effort";
+        /**
          * Lock Target
          * @description What the lock matches (S5 LockMatching facets; OR-matched). At least one
          *     facet must be non-empty, OR `all` must be true — a global lock is never
@@ -1754,6 +1762,8 @@ export interface components {
             target: components["schemas"]["LockTarget"];
             /** @description Operator/audit reason (mandatory). Never disclosed to the SSH user (§7.1). */
             reason: string;
+            /** @description Enforcement mode; omitted defaults to `strict` (backward-compatible). */
+            mode?: components["schemas"]["LockMode"];
             /**
              * Format: int64
              * @description Optional lock lifetime in seconds; omitted or null = no expiry (indefinite until released).
@@ -1766,6 +1776,8 @@ export interface components {
             id: string;
             target: components["schemas"]["LockTarget"];
             reason: string;
+            /** @description Enforcement mode (`strict` or `best_effort`). */
+            mode?: components["schemas"]["LockMode"];
             /**
              * Format: date-time
              * @description Absolute expiry; absent when the lock has no TTL.
@@ -2679,6 +2691,9 @@ export interface components {
             /** Format: uuid */
             correlationId?: string;
             sourceIp?: string;
+            /** @description The session's capability snapshot (FR-AUD-8 search dimension). */
+            capabilities?: string[];
+            nodeLabels?: components["schemas"]["LabelMap"];
             detail?: components["schemas"]["Selector"];
         };
         /** Audit Event Page */
