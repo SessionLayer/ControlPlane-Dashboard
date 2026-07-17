@@ -1,6 +1,7 @@
 import createClient, { type Middleware } from 'openapi-fetch';
 
 import type { paths } from './schema';
+import { insecureProdBaseError } from './prodBaseUrl';
 import { getBearer, notifyUnauthorized } from '../auth/tokenStore';
 
 /**
@@ -16,26 +17,14 @@ export const CP_BASE_URL: string =
     ? configuredBase
     : 'http://localhost:8080';
 
-function isLocalhost(url: string): boolean {
-  try {
-    const { hostname } = new URL(url);
-    return hostname === 'localhost' || hostname === '127.0.0.1';
-  } catch {
-    return false;
+// Runtime backstop for the https-in-production rule (the build-time assertion in
+// vite.config.ts is the primary gate; this catches a bundle handed a bad base at
+// serve time). The http://localhost default is single-instance local dev only.
+if (import.meta.env.PROD) {
+  const insecure = insecureProdBaseError(CP_BASE_URL);
+  if (insecure !== undefined) {
+    throw new Error(insecure);
   }
-}
-
-// Carried-forward scaffold finding: a non-localhost CP base MUST be https in a
-// production build (the bearer would otherwise ride a cleartext channel). The
-// http://localhost default is single-instance local dev only.
-if (
-  import.meta.env.PROD &&
-  !isLocalhost(CP_BASE_URL) &&
-  !CP_BASE_URL.startsWith('https://')
-) {
-  throw new Error(
-    `VITE_CP_BASE_URL must be https:// in production (got "${CP_BASE_URL}")`,
-  );
 }
 
 /**

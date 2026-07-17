@@ -52,9 +52,14 @@ export default tseslint.config(
       ],
     },
   },
-  // Node-side tooling (build/test config, Playwright specs).
+  // Node-side tooling (build/test config, Playwright specs, serving-layer guard).
   {
-    files: ['*.config.{ts,js}', 'e2e/**/*.ts', 'scripts/**/*.{ts,js}'],
+    files: [
+      '*.config.{ts,js}',
+      'e2e/**/*.ts',
+      'scripts/**/*.{ts,js}',
+      'deploy/**/*.ts',
+    ],
     languageOptions: {
       globals: { ...globals.node },
     },
