@@ -34,6 +34,7 @@
     "vitest.config.ts",
     "playwright.config.ts",
     "eslint.config.js",
-    "e2e"
+    "e2e",
+    "deploy"
   ]
 }
