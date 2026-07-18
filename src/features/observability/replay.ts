@@ -58,6 +58,7 @@ async function fetchObjectBytes(
     ) {
       throw new Error(
         `Recording download timed out after ${String(Math.round(timeoutMs / 1000))}s (object store unreachable).`,
+        { cause: e },
       );
     }
     throw e;
