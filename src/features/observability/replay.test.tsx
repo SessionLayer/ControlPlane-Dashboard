@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
 import { fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -278,5 +278,27 @@ describe('recording replay (client-side decrypt)', () => {
     const key = await importCustomerPrivateKey(privateKeyPem);
     const bytes = await loadExportBytes(REC.id, key);
     expect(new TextDecoder().decode(bytes)).toBe(CAST);
+  });
+
+  it('FAILS CLOSED with a bounded timeout when the object store hangs (F-obs-1)', async () => {
+    const { privateKeyPem } = await generateCustomerKeypair();
+
+    server.use(
+      http.post(cp('/v1/recordings/:id/export'), () =>
+        ok({ url: OBJ_URL, method: 'GET', expiresAt: '2030-01-01T00:00:00Z' }),
+      ),
+      // The object store hangs well past the (short, injected) download bound; the
+      // AbortSignal.timeout tears the request down → a clear timeout error, not a
+      // spinner-forever leak.
+      http.get(OBJ_URL, async () => {
+        await delay(2000);
+        return HttpResponse.arrayBuffer(new ArrayBuffer(0));
+      }),
+    );
+
+    const key = await importCustomerPrivateKey(privateKeyPem);
+    await expect(
+      loadExportBytes(REC.id, key, undefined, { timeoutMs: 20 }),
+    ).rejects.toThrow(/timed out/i);
   });
 });
