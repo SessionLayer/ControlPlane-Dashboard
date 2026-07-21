@@ -5,11 +5,12 @@ Zero-Trust SSH access platform. The dashboard is a **client of the OpenAPI
 contract** (Design §13): it renders and drives the Control Plane's REST surface
 and talks to nothing else.
 
-> **Session One status.** This repo currently contains the **foundation
-> scaffold** only: the Vite + React + TypeScript app shell and a single
-> health/version page that calls `GET /v1/version` and `GET /v1/healthz` through
-> the generated typed client. Real admin screens (nodes, rules, roles, sessions,
-> recordings, JIT, locks, …) arrive in a later session.
+It covers the full admin surface — nodes, rules, roles and bindings, CAs,
+sessions, JIT approvals, locks, join tokens, service accounts, break-glass,
+session-limit policies, audit search, and recording replay/export. Admins sign
+in with OIDC (auth-code + PKCE); the bearer lives in memory only. Recording
+replay decrypts **client-side** (WebCrypto): the customer key never leaves the
+browser and the platform never sees it.
 
 ## Quick start
 
@@ -50,6 +51,14 @@ discipline.
 `npm run` &nbsp;`dev` · `build` · `lint` · `format` · `test` · `test:e2e` ·
 `generate:api` · `sync-contracts`. The full quality gate is `./scripts/gate.sh`
 (or `make dash-gate` from the parent).
+
+## Documentation
+
+Operator and user documentation for the whole platform lives in the
+[Documentation repository](https://github.com/SessionLayer/Documentation) —
+including the Dashboard install (serving headers, CSP origins, the https
+build-time guard) and the recording-replay security model. Deployment
+references are under [`deploy/`](deploy/).
 
 ## License
 
