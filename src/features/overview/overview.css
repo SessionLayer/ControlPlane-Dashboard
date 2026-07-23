@@ -3,6 +3,11 @@
   flex-direction: column;
   gap: 1.75rem;
 }
+.overview-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
 .overview-section {
   display: flex;
   flex-direction: column;

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
 import {
-  Badge,
   ConfirmDialog,
   Detail,
   DetailList,
@@ -12,21 +11,8 @@ import {
   Time,
 } from '../../ui';
 import type { SessionResource } from '../../api/types';
-import { AccessModelBadge } from './badges';
+import { AccessModelBadge, CapabilityBadges } from './badges';
 import { useSession, useTerminateSession } from './api';
-
-function Capabilities({ caps }: { caps: SessionResource['capabilities'] }) {
-  if (caps.length === 0) return <span className="muted">—</span>;
-  return (
-    <span className="label-chips">
-      {caps.map((c) => (
-        <Badge key={c} tone="neutral">
-          {c}
-        </Badge>
-      ))}
-    </span>
-  );
-}
 
 export function SessionDetailDialog({
   sessionId,
@@ -57,7 +43,7 @@ export function SessionDetailDialog({
             <AccessModelBadge model={s.accessModel} />
           </Detail>
           <Detail label="Capabilities">
-            <Capabilities caps={s.capabilities} />
+            <CapabilityBadges caps={s.capabilities} />
           </Detail>
           <Detail label="Matched rule">
             {s.matchedRuleName ?? <span className="muted">—</span>}

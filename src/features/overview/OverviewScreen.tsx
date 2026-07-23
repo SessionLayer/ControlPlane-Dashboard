@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { useId, type ReactNode } from 'react';
 
 import { healthQueryOptions, versionQueryOptions } from '../../api/queries';
@@ -17,6 +18,7 @@ import {
   AsyncList,
   Badge,
   type BadgeTone,
+  Button,
   type Column,
   DataTable,
   Detail,
@@ -39,6 +41,7 @@ const RECENT = 6;
 
 /** The landing dashboard: KPI tiles plus recent-items and incident-signal lists. */
 export function OverviewScreen() {
+  const navigate = useNavigate();
   const sessions = useActiveSessions();
   const jit = usePendingJit();
   const locks = useActiveLocks();
@@ -52,12 +55,16 @@ export function OverviewScreen() {
   const unreviewedBg = bgItems.filter(
     (a) => a.reviewStatus === 'pending',
   ).length;
+  const quarantinedNodes = nodeItems.filter(
+    (n) => n.status === 'quarantined',
+  ).length;
   const attentionNodes = nodeItems.filter(
     (n) =>
       n.health === 'unhealthy' ||
       n.health === 'unreachable' ||
       n.status === 'quarantined',
   ).length;
+  const hasAlerts = unreviewedBg > 0 || quarantinedNodes > 0;
 
   return (
     <>
@@ -66,6 +73,31 @@ export function OverviewScreen() {
         description="Live control-plane posture: active access, pending approvals, and incident signals."
       />
       <div className="overview">
+        {hasAlerts && (
+          <div className="overview-alerts">
+            {unreviewedBg > 0 && (
+              <AlertBanner
+                tone="fail"
+                text={`${String(unreviewedBg)} break-glass activation${unreviewedBg > 1 ? 's' : ''} awaiting mandatory review`}
+                cta="Review"
+                onActivate={() => {
+                  void navigate({ to: '/break-glass' });
+                }}
+              />
+            )}
+            {quarantinedNodes > 0 && (
+              <AlertBanner
+                tone="warn"
+                text={`${String(quarantinedNodes)} node${quarantinedNodes > 1 ? 's' : ''} quarantined`}
+                cta="Inspect"
+                onActivate={() => {
+                  void navigate({ to: '/nodes' });
+                }}
+              />
+            )}
+          </div>
+        )}
+
         <section className="card-grid" aria-label="Key metrics">
           <Kpi
             label="Active sessions"
@@ -73,6 +105,9 @@ export function OverviewScreen() {
             plus={sessions.data?.hasMore ?? false}
             isPending={sessions.isPending}
             isError={sessions.isError}
+            onActivate={() => {
+              void navigate({ to: '/sessions' });
+            }}
           />
           <Kpi
             label="Pending JIT approvals"
@@ -80,6 +115,9 @@ export function OverviewScreen() {
             isPending={jit.isPending}
             isError={jit.isError}
             tone="warn"
+            onActivate={() => {
+              void navigate({ to: '/jit-requests' });
+            }}
           />
           <Kpi
             label="Active locks"
@@ -87,6 +125,9 @@ export function OverviewScreen() {
             isPending={locks.isPending}
             isError={locks.isError}
             tone="warn"
+            onActivate={() => {
+              void navigate({ to: '/locks' });
+            }}
           />
           <Kpi
             label="Break-glass to review"
@@ -94,12 +135,18 @@ export function OverviewScreen() {
             isPending={breakglass.isPending}
             isError={breakglass.isError}
             tone="fail"
+            onActivate={() => {
+              void navigate({ to: '/break-glass' });
+            }}
           />
           <Kpi
             label="Nodes"
             value={nodeItems.length}
             isPending={nodes.isPending}
             isError={nodes.isError}
+            onActivate={() => {
+              void navigate({ to: '/nodes' });
+            }}
           />
           <Kpi
             label="Nodes needing attention"
@@ -107,6 +154,9 @@ export function OverviewScreen() {
             isPending={nodes.isPending}
             isError={nodes.isError}
             tone="fail"
+            onActivate={() => {
+              void navigate({ to: '/nodes' });
+            }}
           />
         </section>
 
@@ -229,6 +279,7 @@ function Kpi({
   isError,
   tone,
   plus = false,
+  onActivate,
 }: {
   label: string;
   value: number;
@@ -236,10 +287,12 @@ function Kpi({
   isError: boolean;
   tone?: 'warn' | 'fail';
   plus?: boolean;
+  /** Every KPI tile navigates to the real screen it summarizes (mockup `stat.go`). */
+  onActivate: () => void;
 }) {
   const emphasize = tone !== undefined && !isPending && !isError && value > 0;
   return (
-    <div className="metric-card">
+    <button type="button" className="metric-card" onClick={onActivate}>
       <div className={`metric-value${emphasize ? ` tone-${tone}` : ''}`}>
         {isPending ? (
           <span className="muted">—</span>
@@ -252,6 +305,38 @@ function Kpi({
         )}
       </div>
       <div className="metric-label">{label}</div>
+    </button>
+  );
+}
+
+/** Incident-signal banner (mockup: `.alert-fail`/`.alert-warn`). Built from real
+ *  counts already queried for the KPI tiles — never invented flavor text. */
+function AlertBanner({
+  tone,
+  text,
+  cta,
+  onActivate,
+}: {
+  tone: 'fail' | 'warn';
+  text: string;
+  cta: string;
+  onActivate: () => void;
+}) {
+  return (
+    <div
+      className={`alert-banner alert-${tone}`}
+      role="status"
+      aria-live="polite"
+    >
+      <span className="alert-banner-dot" aria-hidden="true" />
+      <span className="alert-banner-text">{text}</span>
+      <Button
+        size="sm"
+        variant={tone === 'fail' ? 'danger' : 'secondary'}
+        onClick={onActivate}
+      >
+        {cta}
+      </Button>
     </div>
   );
 }
