@@ -1240,6 +1240,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/session-limit-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List session-limit policies (admin).
+         * @description Lists per-identity session-limit policies (`config.session_limit_policy`;
+         *     FR-SESS-3) — overrides for the concurrent-session cap, max session
+         *     duration, and idle timeout. When several policies match an identity the
+         *     most restrictive value wins per knob; the `operator_settings` cluster
+         *     defaults apply where no policy matches. Cursor-paginated. Platform-RBAC
+         *     gated (`rbac:read`).
+         */
+        get: operations["listSessionLimitPolicies"];
+        put?: never;
+        /**
+         * Create a session-limit policy (admin).
+         * @description Creates a session-limit policy. Invalid config (a malformed
+         *     `identitySelector`, a non-positive limit, or all three limits absent) is
+         *     rejected PRE-COMMIT (`422`, FR-API-5). The `origin` is server-set to
+         *     `api`. Platform-RBAC gated (`settings:write`) + audited.
+         */
+        post: operations["createSessionLimitPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/session-limit-policies/{sessionLimitPolicyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionLimitPolicyId: components["parameters"]["SessionLimitPolicyId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a session-limit policy (admin).
+         * @description Returns one session-limit policy by id. Platform-RBAC gated (`rbac:read`).
+         */
+        get: operations["getSessionLimitPolicy"];
+        /**
+         * Update a session-limit policy (admin).
+         * @description Replaces the mutable fields of a session-limit policy (the `name` is
+         *     immutable). Invalid config is rejected pre-commit (`422`). The `version`
+         *     is required and must match (optimistic concurrency — a stale version is
+         *     a `409`). Platform-RBAC gated (`settings:write`) + audited.
+         */
+        put: operations["updateSessionLimitPolicy"];
+        post?: never;
+        /**
+         * Delete a session-limit policy (admin).
+         * @description Deletes a session-limit policy (idempotent — `204` whether or not it
+         *     existed). Enforcement falls back to the remaining policies / cluster
+         *     defaults from the next decision. Platform-RBAC gated (`settings:write`)
+         *     + audited.
+         */
+        delete: operations["deleteSessionLimitPolicy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sessions": {
         parameters: {
             query?: never;
@@ -2561,6 +2629,66 @@ export interface components {
             items: components["schemas"]["BreakglassPolicyResource"][];
             nextCursor?: string;
         };
+        /**
+         * Session-Limit Policy
+         * @description A per-identity override for the FR-SESS-3 session-limit knobs. Every
+         *     stored value is enforced: `maxConcurrentSessions` as the HARD cap at
+         *     Authorize, `maxSessionSeconds` folded into the decision's `grant_expiry`,
+         *     `idleTimeoutSeconds` signed into the decision context and applied
+         *     (tighten-only) by the Gateway. An absent knob defers to the
+         *     `operator_settings` cluster default for that knob.
+         */
+        SessionLimitPolicyResource: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            identitySelector: components["schemas"]["Selector"];
+            /** Format: int32 */
+            maxConcurrentSessions?: number;
+            /** Format: int32 */
+            maxSessionSeconds?: number;
+            /** Format: int32 */
+            idleTimeoutSeconds?: number;
+            origin: components["schemas"]["Origin"];
+            /** Format: int64 */
+            version: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        /** Create Session-Limit Policy Request */
+        CreateSessionLimitPolicyRequest: {
+            name: string;
+            identitySelector: components["schemas"]["Selector"];
+            /** Format: int32 */
+            maxConcurrentSessions?: number;
+            /** Format: int32 */
+            maxSessionSeconds?: number;
+            /** Format: int32 */
+            idleTimeoutSeconds?: number;
+        };
+        /** Update Session-Limit Policy Request */
+        UpdateSessionLimitPolicyRequest: {
+            identitySelector: components["schemas"]["Selector"];
+            /** Format: int32 */
+            maxConcurrentSessions?: number;
+            /** Format: int32 */
+            maxSessionSeconds?: number;
+            /** Format: int32 */
+            idleTimeoutSeconds?: number;
+            /**
+             * Format: int64
+             * @description The current resource version; required and must match (optimistic concurrency — no silent lost update).
+             */
+            version: number;
+        };
+        /** Session-Limit Policy Page */
+        SessionLimitPolicyPage: {
+            items: components["schemas"]["SessionLimitPolicyResource"][];
+            /** @description Cursor for the next page; absent on the last page. */
+            nextCursor?: string;
+        };
         /** SSH Session */
         SessionResource: {
             /** Format: uuid */
@@ -2749,6 +2877,7 @@ export interface components {
         CapabilityDefId: string;
         JitPolicyId: string;
         BreakglassPolicyId: string;
+        SessionLimitPolicyId: string;
         SessionId: string;
         RecordingId: string;
         AuditEventId: string;
@@ -5038,6 +5167,153 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description The break-glass policy was deleted (idempotent). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listSessionLimitPolicies: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Opaque forward-only pagination cursor from a previous page's `nextCursor`.
+                 *     Omit for the first page. An unrecognised cursor is a `400`.
+                 */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Maximum items to return in one page (the server clamps to its maximum). */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of session-limit policies. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionLimitPolicyPage"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    createSessionLimitPolicy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Optional client-generated idempotency key scoping a mutating request. A
+                 *     retry with the same key, method, and path returns the original response and
+                 *     never repeats the side effect; the same key with a different request body is
+                 *     a `422`. Keys are retained for a bounded TTL.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSessionLimitPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description The session-limit policy was created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionLimitPolicyResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getSessionLimitPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionLimitPolicyId: components["parameters"]["SessionLimitPolicyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The session-limit policy. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionLimitPolicyResource"];
+                };
+            };
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateSessionLimitPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionLimitPolicyId: components["parameters"]["SessionLimitPolicyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSessionLimitPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated session-limit policy. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionLimitPolicyResource"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteSessionLimitPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionLimitPolicyId: components["parameters"]["SessionLimitPolicyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The session-limit policy was deleted (idempotent). */
             204: {
                 headers: {
                     [name: string]: unknown;

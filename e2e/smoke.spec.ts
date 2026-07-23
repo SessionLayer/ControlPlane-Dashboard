@@ -65,7 +65,9 @@ test('unauthenticated visitors are sent to the sign-in screen', async ({
   await expect(
     page.getByRole('heading', { name: /Control Plane/i }),
   ).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Continue with SSO (OIDC)' }),
+  ).toBeVisible();
 });
 
 test('OIDC authorization-code + PKCE flow yields an in-memory bearer', async ({
@@ -96,7 +98,7 @@ test('OIDC authorization-code + PKCE flow yields an in-memory bearer', async ({
   );
 
   await page.goto('/');
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('button', { name: 'Continue with SSO (OIDC)' }).click();
 
   // Lands authenticated: the app shell (with the signed-in user) is shown.
   await expect(page.getByText('E2E Admin')).toBeVisible();
