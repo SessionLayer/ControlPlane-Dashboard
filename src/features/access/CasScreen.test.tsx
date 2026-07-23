@@ -127,6 +127,27 @@ describe('CasScreen', () => {
     });
   });
 
+  it('surfaces a 409 stale-version conflict with a reload hint', async () => {
+    server.use(
+      http.get(cp('/v1/cas'), () => page([ca({ version: 7 })])),
+      http.put(cp('/v1/cas/:caId'), () => problem(409, 'Version conflict')),
+    );
+    renderWithProviders(<CasScreen />, {
+      authenticated: true,
+      permissions: [...MANAGE],
+    });
+    fireEvent.click(await screen.findByText('user-ca'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Save changes' }),
+    );
+
+    expect(await screen.findByText('Version conflict')).toBeInTheDocument();
+    expect(
+      screen.getByText(/changed since you loaded it/i),
+    ).toBeInTheDocument();
+  });
+
   it('rotates a CA after confirmation via the inline row action', async () => {
     let rotated = false;
     server.use(

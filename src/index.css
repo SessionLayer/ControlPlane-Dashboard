@@ -20,7 +20,13 @@
   /* text */
   --text: #e7ebf4;
   --muted: #8c95a8;
-  --faint: #5a6478;
+  /* WCAG AA note: the mockup's #5A6478 fails 4.5:1 on every real surface this
+     token lands on (nav section titles, header breadcrumb, table th, login
+     footnote — all normal-size informational text, not decorative). Lightened
+     to the nearest value that clears 4.5:1 on the darkest surface it's used
+     against, same hue family — accessibility wins over exact mockup fidelity
+     per doctrine (documented in RESULT.md §6). */
+  --faint: #7e88a0;
 
   /* accent + status tones (text / background / border triplets) */
   --accent: #57d9a3;

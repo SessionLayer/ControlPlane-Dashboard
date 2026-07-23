@@ -22,7 +22,13 @@ import type {
   JitApprovalLevel,
   JitPolicyResource,
 } from '../../api/types';
-import { CrudScreen, OriginBadge, FormDialog, SelectorSummary } from './common';
+import {
+  ApprovalChainSummary,
+  CrudScreen,
+  OriginBadge,
+  FormDialog,
+  SelectorSummary,
+} from './common';
 import {
   CAPABILITY_OPTIONS,
   APPROVAL_KIND_OPTIONS,
@@ -68,9 +74,8 @@ export function JitPoliciesScreen() {
     },
     { header: 'Max TTL (s)', cell: (r) => r.maxTtlSeconds, align: 'right' },
     {
-      header: 'Approvals',
-      cell: (r) => r.approvalChain.length,
-      align: 'right',
+      header: 'Approval chain',
+      cell: (r) => <ApprovalChainSummary chain={r.approvalChain} />,
     },
     { header: 'Origin', cell: (r) => <OriginBadge origin={r.origin} /> },
     { header: 'Version', cell: (r) => r.version, align: 'right' },

@@ -123,6 +123,29 @@ describe('RoleBindingsScreen', () => {
     });
   });
 
+  it('surfaces a 409 stale-version conflict with a reload hint', async () => {
+    server.use(
+      http.get(cp('/v1/role-bindings'), () => page([binding({ version: 2 })])),
+      http.put(cp('/v1/role-bindings/:bindingId'), () =>
+        problem(409, 'Version conflict'),
+      ),
+    );
+    renderWithProviders(<RoleBindingsScreen />, {
+      authenticated: true,
+      permissions: [...WRITE],
+    });
+    fireEvent.click(await screen.findByText('platform-admins'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Save changes' }),
+    );
+
+    expect(await screen.findByText('Version conflict')).toBeInTheDocument();
+    expect(
+      screen.getByText(/changed since you loaded it/i),
+    ).toBeInTheDocument();
+  });
+
   it('deletes a binding after confirmation', async () => {
     let deleted = false;
     server.use(

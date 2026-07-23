@@ -42,7 +42,7 @@ import {
 } from './status';
 import './ir.css';
 
-type DecisionKind = 'approve' | 'deny' | 'revoke';
+export type DecisionKind = 'approve' | 'deny' | 'revoke';
 type Modal =
   | { kind: 'submit' }
   | { kind: 'detail'; row: JitRequestResource }
@@ -222,7 +222,9 @@ const DECISION_COPY: Record<
   },
 };
 
-function JitDecisionDialog({
+/** Exported so the Overview screen can offer the same inline Approve/Deny flow
+ *  without duplicating the mutation wiring (SESSION.md §1.1-C). */
+export function JitDecisionDialog({
   kind,
   request,
   onClose,

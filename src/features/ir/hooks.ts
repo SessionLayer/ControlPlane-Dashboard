@@ -142,6 +142,7 @@ export function useLocks(): UseQueryResult<LockResource[]> {
   });
 }
 
+// NB: no contract-defined Idempotency-Key parameter on this operation — OBS-1.
 export function useCreateLock() {
   const qc = useQueryClient();
   return useMutation({

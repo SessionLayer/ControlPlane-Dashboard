@@ -131,6 +131,27 @@ describe('RulesScreen', () => {
     });
   });
 
+  it('surfaces a 409 stale-version conflict with a reload hint', async () => {
+    server.use(
+      http.get(cp('/v1/rules'), () => page([rule({ version: 5 })])),
+      http.put(cp('/v1/rules/:ruleId'), () => problem(409, 'Version conflict')),
+    );
+    renderWithProviders(<RulesScreen />, {
+      authenticated: true,
+      permissions: [...WRITE],
+    });
+    fireEvent.click(await screen.findByText('prod-shell'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Save changes' }),
+    );
+
+    expect(await screen.findByText('Version conflict')).toBeInTheDocument();
+    expect(
+      screen.getByText(/changed since you loaded it/i),
+    ).toBeInTheDocument();
+  });
+
   it('deletes a rule after confirmation', async () => {
     let deleted = false;
     server.use(

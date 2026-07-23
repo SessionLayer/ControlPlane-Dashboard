@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { useId, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 
 import { healthQueryOptions, versionQueryOptions } from '../../api/queries';
 import type {
@@ -14,6 +14,7 @@ import type {
   NodeResource,
   SessionResource,
 } from '../../api/types';
+import { useAuth, useCan } from '../../auth/AuthContext';
 import {
   AsyncList,
   Badge,
@@ -27,6 +28,8 @@ import {
   ProblemAlert,
   Time,
 } from '../../ui';
+import { JitDecisionDialog, type DecisionKind } from '../ir/JitRequestList';
+import { isPendingJit } from '../ir/status';
 import {
   useActiveLocks,
   useActiveSessions,
@@ -48,6 +51,12 @@ export function OverviewScreen() {
   const breakglass = useBreakglassActivations();
   const nodes = useNodes();
   const audit = useRecentAudit();
+  const canApprove = useCan('request:approve');
+  const subject = useAuth().user?.subject;
+  const [decision, setDecision] = useState<{
+    kind: DecisionKind;
+    row: JitRequestResource;
+  } | null>(null);
 
   const sessionItems = sessions.data?.items ?? [];
   const bgItems = breakglass.data ?? [];
@@ -182,7 +191,7 @@ export function OverviewScreen() {
             emptyTitle="No requests awaiting approval"
             caption="JIT requests awaiting an approval decision"
             rowKey={(r) => r.id}
-            columns={JIT_COLUMNS}
+            columns={jitColumns(canApprove, subject, setDecision)}
           />
         </Section>
 
@@ -245,6 +254,16 @@ export function OverviewScreen() {
 
         <ControlPlaneSection />
       </div>
+
+      {decision !== null && (
+        <JitDecisionDialog
+          kind={decision.kind}
+          request={decision.row}
+          onClose={() => {
+            setDecision(null);
+          }}
+        />
+      )}
     </>
   );
 }
@@ -549,13 +568,51 @@ const SESSION_COLUMNS: Column<SessionResource>[] = [
   { header: 'Started', cell: (r) => <Time value={r.startedAt} /> },
 ];
 
-const JIT_COLUMNS: Column<JitRequestResource>[] = [
-  { header: 'Requester', cell: (r) => r.requester },
-  { header: 'Node', cell: (r) => text(r.targetNodeName ?? r.targetNodeId) },
-  { header: 'Principal', cell: (r) => r.principal },
-  { header: 'Requested', cell: (r) => <Time value={r.requestedAt} /> },
-  { header: 'Approve by', cell: (r) => <Time value={r.approvalDeadline} /> },
-];
+/** Inline Approve/Deny (SESSION.md §1.1-C) — self-approval is impossible
+ *  (reflects server truth: a requester can never decide their own request),
+ *  same gating as the JIT requests screen. */
+function jitColumns(
+  canApprove: boolean,
+  subject: string | undefined,
+  onDecide: (d: { kind: DecisionKind; row: JitRequestResource }) => void,
+): Column<JitRequestResource>[] {
+  return [
+    { header: 'Requester', cell: (r) => r.requester },
+    { header: 'Node', cell: (r) => text(r.targetNodeName ?? r.targetNodeId) },
+    { header: 'Principal', cell: (r) => r.principal },
+    { header: 'Requested', cell: (r) => <Time value={r.requestedAt} /> },
+    { header: 'Approve by', cell: (r) => <Time value={r.approvalDeadline} /> },
+    {
+      header: 'Actions',
+      cell: (r) => {
+        const isSelf = subject !== undefined && r.requester === subject;
+        if (!canApprove || !isPendingJit(r.state) || isSelf) return null;
+        return (
+          <div className="cluster">
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => {
+                onDecide({ kind: 'approve', row: r });
+              }}
+            >
+              Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => {
+                onDecide({ kind: 'deny', row: r });
+              }}
+            >
+              Deny
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+}
 
 const LOCK_COLUMNS: Column<LockResource>[] = [
   { header: 'Target', cell: (r) => lockTargetSummary(r.target) },

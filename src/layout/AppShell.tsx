@@ -93,7 +93,7 @@ export function AppShell() {
               setNavOpen((o) => !o);
             }}
           >
-            ✕
+            <span aria-hidden="true">{navOpen ? '✕' : '☰'}</span>
           </button>
         </div>
         <nav className="app-nav" aria-label="Primary" onClick={closeNav}>

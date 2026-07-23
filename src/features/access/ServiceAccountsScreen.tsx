@@ -168,6 +168,9 @@ function CredentialsPanel({ account }: { account: ServiceAccountResource }) {
   const [fingerprint, setFingerprint] = useState('');
   const [ttl, setTtl] = useState<number | ''>('');
   const [revokeId, setRevokeId] = useState('');
+  const [pendingRevoke, setPendingRevoke] = useState<string | undefined>(
+    undefined,
+  );
 
   const issued = issue.data;
 
@@ -266,7 +269,7 @@ function CredentialsPanel({ account }: { account: ServiceAccountResource }) {
               variant="danger"
               disabled={revoke.isPending}
               onClick={() => {
-                revoke.mutate({ id: account.id, credentialId: issued.id });
+                setPendingRevoke(issued.id);
               }}
             >
               {revoke.isPending ? 'Revoking…' : 'Revoke this credential'}
@@ -287,7 +290,7 @@ function CredentialsPanel({ account }: { account: ServiceAccountResource }) {
             variant="danger"
             disabled={revoke.isPending || revokeId.trim() === ''}
             onClick={() => {
-              revoke.mutate({ id: account.id, credentialId: revokeId.trim() });
+              setPendingRevoke(revokeId.trim());
             }}
           >
             Revoke
@@ -300,6 +303,33 @@ function CredentialsPanel({ account }: { account: ServiceAccountResource }) {
         </p>
       )}
       <MutationError error={revoke.error} />
+
+      {pendingRevoke !== undefined && (
+        <ConfirmDialog
+          title="Revoke this credential?"
+          confirmLabel="Revoke"
+          pending={revoke.isPending}
+          error={revoke.error}
+          onConfirm={() => {
+            revoke.mutate(
+              { id: account.id, credentialId: pendingRevoke },
+              {
+                onSuccess: () => {
+                  setPendingRevoke(undefined);
+                },
+              },
+            );
+          }}
+          onClose={() => {
+            setPendingRevoke(undefined);
+          }}
+        >
+          <p>
+            New sessions using this credential are denied immediately. This
+            cannot be undone.
+          </p>
+        </ConfirmDialog>
+      )}
     </div>
   );
 }
@@ -385,6 +415,11 @@ export function ServiceAccountsScreen() {
         r.description !== undefined && r.description !== ''
           ? r.description
           : '—',
+    },
+    {
+      header: 'Token TTL (s)',
+      cell: (r) => r.tokenTtlSeconds ?? '—',
+      align: 'right',
     },
     { header: 'Origin', cell: (r) => <OriginBadge origin={r.origin} /> },
   ];

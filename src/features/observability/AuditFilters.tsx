@@ -47,7 +47,10 @@ function DateTimeField({
  * subject, action, outcome, session, node (+ node label), source IP,
  * capability, access model, time range, and correlation id — all real,
  * write-path-populated search dimensions the `/v1/audit-events` search
- * accepts (proven end-to-end at S20's cross-repo E2E closure).
+ * accepts. Backfilled and Verified-Fixed in Session 20 Part B (closed
+ * S18 finding `F-audit-write-dimensions-1`; regression: CP's
+ * `AuthorizeIT` scoped-auditor full-chain assertion) — see
+ * `Docs/sessions/twenty/RESULT.md` §3.
  */
 export function AuditFilters({
   draft,

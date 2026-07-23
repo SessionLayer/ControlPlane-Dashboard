@@ -14,7 +14,12 @@ import {
   type BadgeTone,
 } from '../../ui';
 import type { CursorListResult } from '../../api/http';
-import type { LabelMap, Origin, Selector } from '../../api/types';
+import type {
+  JitApprovalLevel,
+  LabelMap,
+  Origin,
+  Selector,
+} from '../../api/types';
 import { conflictHint } from './helpers';
 
 const ORIGIN_TONE: Record<Origin, BadgeTone> = {
@@ -45,6 +50,32 @@ export function SelectorSummary({
     entries.map(([k, v]) => [k, typeof v === 'string' ? v : JSON.stringify(v)]),
   );
   return <LabelMapView labels={labels} />;
+}
+
+/**
+ * A compact "N levels (kind:value → kind:value)" summary of a JIT policy's
+ * approval chain for list-table cells (mirrors `SelectorSummary`) — the full
+ * per-level detail stays in the detail dialog.
+ */
+export function ApprovalChainSummary({
+  chain,
+}: {
+  chain: JitApprovalLevel[] | undefined;
+}) {
+  if (chain === undefined || chain.length === 0) {
+    return <span className="muted">auto-approve (0 levels)</span>;
+  }
+  const levels = chain
+    .map((l) =>
+      l.kind !== undefined && l.value !== undefined
+        ? `${l.kind}:${l.value}`
+        : undefined,
+    )
+    .filter((v): v is string => v !== undefined);
+  const suffix = levels.length > 0 ? ` (${levels.join(' → ')})` : '';
+  return (
+    <span>{`${String(chain.length)} level${chain.length > 1 ? 's' : ''}${suffix}`}</span>
+  );
 }
 
 /**

@@ -118,6 +118,27 @@ describe('RolesScreen', () => {
     });
   });
 
+  it('surfaces a 409 stale-version conflict with a reload hint', async () => {
+    server.use(
+      http.get(cp('/v1/roles'), () => page([role({ version: 3 })])),
+      http.put(cp('/v1/roles/:roleId'), () => problem(409, 'Version conflict')),
+    );
+    renderWithProviders(<RolesScreen />, {
+      authenticated: true,
+      permissions: [...WRITE],
+    });
+    fireEvent.click(await screen.findByText('platform-admin'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Save changes' }),
+    );
+
+    expect(await screen.findByText('Version conflict')).toBeInTheDocument();
+    expect(
+      screen.getByText(/changed since you loaded it/i),
+    ).toBeInTheDocument();
+  });
+
   it('deletes a role after confirmation', async () => {
     let deleted = false;
     server.use(

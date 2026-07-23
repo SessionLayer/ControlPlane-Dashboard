@@ -414,4 +414,88 @@ describe('OverviewScreen', () => {
 
     expect(await screen.findByText('ROUTE:/nodes')).toBeInTheDocument();
   });
+
+  it('offers inline Approve/Deny on a pending JIT request for an approver', async () => {
+    mockOverview({ jit: () => ok({ jitRequests: JIT }) });
+    renderWithProviders(<OverviewScreen />, {
+      authenticated: true,
+      permissions: [...PERMS, 'request:approve'],
+    });
+
+    const region = await screen.findByRole('region', {
+      name: 'Pending JIT approvals',
+    });
+    expect(
+      await within(region).findByRole('button', { name: 'Approve' }),
+    ).toBeInTheDocument();
+    expect(
+      within(region).getByRole('button', { name: 'Deny' }),
+    ).toBeInTheDocument();
+  });
+
+  it('hides Approve/Deny for a request the signed-in identity submitted (self-approval is impossible)', async () => {
+    mockOverview({
+      jit: () => ok({ jitRequests: [{ ...JIT[0], requester: 'admin@test' }] }),
+    });
+    renderWithProviders(<OverviewScreen />, {
+      authenticated: true,
+      permissions: [...PERMS, 'request:approve'],
+    });
+
+    const region = await screen.findByRole('region', {
+      name: 'Pending JIT approvals',
+    });
+    await within(region).findByText('admin@test'); // the row rendered before asserting absence
+    expect(
+      within(region).queryByRole('button', { name: 'Approve' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('hides Approve/Deny entirely without request:approve', async () => {
+    mockOverview({ jit: () => ok({ jitRequests: JIT }) });
+    renderWithProviders(<OverviewScreen />, {
+      authenticated: true,
+      permissions: [...PERMS],
+    });
+
+    const region = await screen.findByRole('region', {
+      name: 'Pending JIT approvals',
+    });
+    await within(region).findByText('carol@corp.example');
+    expect(
+      within(region).queryByRole('button', { name: 'Approve' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('approves a pending JIT request inline and closes the dialog on success', async () => {
+    let approved = false;
+    mockOverview({ jit: () => ok({ jitRequests: JIT }) });
+    server.use(
+      http.post(cp('/v1/jit-requests/:id/approve'), () => {
+        approved = true;
+        return ok({});
+      }),
+    );
+    renderWithProviders(<OverviewScreen />, {
+      authenticated: true,
+      permissions: [...PERMS, 'request:approve'],
+    });
+
+    const region = await screen.findByRole('region', {
+      name: 'Pending JIT approvals',
+    });
+    fireEvent.click(
+      await within(region).findByRole('button', { name: 'Approve' }),
+    );
+
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Approve' }));
+
+    await waitFor(() => {
+      expect(approved).toBe(true);
+    });
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
 });
