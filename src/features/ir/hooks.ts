@@ -16,6 +16,8 @@ import type {
   CreatePinRequest,
   IssueBreakglassOfflineCodesRequest,
   IssuedBreakglassOfflineCodes,
+  IssueOtpRequest,
+  IssuedOtp,
   JitRequestResource,
   JitRequestSubmission,
   LockResource,
@@ -75,6 +77,8 @@ export function useJitRequest(
   });
 }
 
+// NB: `submitJitRequest` has no contract-defined Idempotency-Key parameter
+// (only the S17 config-CRUD resources do) — see OBS-1 in the session report.
 export function useSubmitJitRequest() {
   const qc = useQueryClient();
   return useMutation({
@@ -177,6 +181,7 @@ export function useBreakglassCredentials(): UseQueryResult<
   });
 }
 
+// NB: no contract-defined Idempotency-Key parameter on this operation — OBS-1.
 export function useRegisterBreakglassCredential() {
   const qc = useQueryClient();
   return useMutation({
@@ -218,6 +223,7 @@ export function useBreakglassOfflineCodes(): UseQueryResult<
   });
 }
 
+// NB: no contract-defined Idempotency-Key parameter on this operation — OBS-1.
 export function useIssueBreakglassOfflineCodes() {
   const qc = useQueryClient();
   return useMutation({
@@ -286,6 +292,7 @@ export function usePins(identity: string): UseQueryResult<PinResource[]> {
   });
 }
 
+// NB: no contract-defined Idempotency-Key parameter on this operation — OBS-1.
 export function useCreatePin() {
   const qc = useQueryClient();
   return useMutation({
@@ -306,5 +313,16 @@ export function useRevokePin() {
       );
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: resourceKey(PIN_KEY) }),
+  });
+}
+
+// ------------------------------------------------------------------------- OTP
+
+// NB: no contract-defined Idempotency-Key parameter on this operation — OBS-1.
+/** Admin-issued single-use OTP (Design §5.4, FR-AUTH-9) — the raw value is shown once. */
+export function useIssueOtp() {
+  return useMutation({
+    mutationFn: async (body: IssueOtpRequest): Promise<IssuedOtp> =>
+      unwrap(await api.POST('/v1/otp', { body })),
   });
 }

@@ -144,4 +144,50 @@ describe('PinList', () => {
       screen.queryByRole('button', { name: 'Revoke' }),
     ).not.toBeInTheDocument();
   });
+
+  it('issues an OTP and reveals it exactly once', async () => {
+    server.use(
+      http.get(cp('/v1/pins'), () => ok({ pins: [] })),
+      http.post(cp('/v1/otp'), () =>
+        ok(
+          {
+            otpId: '018f0000-0000-7000-8000-0000000000e1',
+            otp: '482913',
+            expiresAt: '2026-07-16T18:05:00Z',
+          },
+          201,
+        ),
+      ),
+    );
+    renderWithProviders(<PinList />, {
+      authenticated: true,
+      permissions: [...MANAGE],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Issue OTP…' }));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.change(
+      within(dialog).getByLabelText('Identity', { exact: false }),
+      { target: { value: 'dev@corp.example' } },
+    );
+    const principals = within(dialog).getByLabelText('Allowed principals', {
+      exact: false,
+    });
+    fireEvent.change(principals, { target: { value: 'deploy' } });
+    fireEvent.keyDown(principals, { key: 'Enter' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Issue OTP' }));
+
+    expect(await screen.findByText('482913')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument();
+  });
+
+  it('hides Issue OTP without user:manage', () => {
+    renderWithProviders(<PinList />, {
+      authenticated: true,
+      permissions: ['lock:read'],
+    });
+    expect(
+      screen.queryByRole('button', { name: 'Issue OTP…' }),
+    ).not.toBeInTheDocument();
+  });
 });

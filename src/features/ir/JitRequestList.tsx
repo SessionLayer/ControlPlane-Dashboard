@@ -64,20 +64,25 @@ export function JitRequestList() {
   };
 
   const columns: Column<JitRequestResource>[] = [
+    {
+      header: 'Request',
+      cell: (r) => <span className="mono">{r.id.slice(0, 8)}</span>,
+    },
     { header: 'Requester', cell: (r) => r.requester },
     {
       header: 'Target',
       cell: (r) => r.targetNodeName ?? r.targetNodeId ?? '—',
     },
     { header: 'Principal', cell: (r) => r.principal },
+    { header: 'Reason', cell: (r) => r.reason },
+    {
+      header: 'Chain',
+      cell: (r) =>
+        `${String(r.approvals?.length ?? 0)}/${String(r.approvalChain?.length ?? 0)}`,
+    },
     {
       header: 'State',
       cell: (r) => <Badge tone={jitStateTone(r.state)}>{r.state}</Badge>,
-    },
-    {
-      header: 'Approvals',
-      cell: (r) =>
-        `${String(r.approvals?.length ?? 0)}/${String(r.approvalChain?.length ?? 0)}`,
     },
     { header: 'Requested', cell: (r) => <Time value={r.requestedAt} /> },
     {
