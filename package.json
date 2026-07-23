@@ -19,7 +19,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "generate:api": "openapi-typescript openapi/openapi.yaml --output src/api/schema.d.ts",
-    "sync-contracts": "scripts/sync-contracts.sh",
+    "vendor-contracts": "scripts/vendor-contracts.sh",
+    "vendor-contracts:check": "scripts/vendor-contracts.sh --check",
     "sbom": "cyclonedx-npm --output-format JSON --spec-version 1.6 --output-reproducible --output-file sbom.cdx.json"
   },
   "dependencies": {

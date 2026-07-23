@@ -15,11 +15,18 @@ Stack: **Vite + React 19 + TypeScript (strict)**, **TanStack Query** (data),
 The typed API client is generated from the OpenAPI spec — do **not** hand-edit
 generated types.
 
-- **Canonical spec** lives upstream in `ControlPlane-API/contracts/openapi/openapi.yaml`
-  and is **FROZEN** per session. CI checks out this repo alone, so the spec is
-  **vendored** (committed) at `openapi/openapi.yaml`.
-- Re-vendor with `npm run sync-contracts` (copies from the sibling repo if
-  present; no-op with a note otherwise).
+- **Canonical spec** lives in the public **`SessionLayer/Contracts`** repo at
+  `contracts/openapi/openapi.yaml`, pinned by `contracts.lock` (tag + resolved
+  commit SHA) and **FROZEN** per session. The spec is **vendored** (committed)
+  at `openapi/openapi.yaml`.
+- Re-vendor with `npm run vendor-contracts` (clones the pinned tag and verifies
+  the resolved commit SHA against `contracts.lock` before copying — a moved tag
+  fails, never silently swaps content). `npm run vendor-contracts:check`
+  (CI-enforced, right after checkout) fetches the same pinned tag and fails on
+  any drift between it and the vendored copy.
+- To take a new upstream contract version: update `contracts.lock` (tag + SHA)
+  in a reviewed change, then `npm run vendor-contracts` + `npm run generate:api`
+  and commit all three.
 - `npm run generate:api` regenerates `src/api/schema.d.ts` (via
   `openapi-typescript`); `src/api/client.ts` wraps it with `openapi-fetch`.
 - **Drift check (CI-enforced):** `npm run generate:api && git diff --exit-code -- src/api`.
@@ -71,17 +78,18 @@ Points carried forward:
 
 ## Commands
 
-| Command                  | What                                                 |
-| ------------------------ | ---------------------------------------------------- |
-| `npm run dev`            | Vite dev server (`:5173`)                            |
-| `npm run build`          | `tsc -b` (typecheck) + `vite build`                  |
-| `npm run lint`           | type-checked ESLint + Prettier check                 |
-| `npm run format`         | Prettier write                                       |
-| `npm run test`           | Vitest unit/component (API mocked with MSW)          |
-| `npm run test:e2e`       | Playwright smoke (API mocked via route interception) |
-| `npm run generate:api`   | regenerate the typed client from the vendored spec   |
-| `npm run sync-contracts` | re-vendor the spec from ControlPlane-API             |
-| `./scripts/gate.sh`      | full ROUND_FINAL gate (also `make dash-gate`)        |
+| Command                          | What                                                                           |
+| -------------------------------- | ------------------------------------------------------------------------------ |
+| `npm run dev`                    | Vite dev server (`:5173`)                                                      |
+| `npm run build`                  | `tsc -b` (typecheck) + `vite build`                                            |
+| `npm run lint`                   | type-checked ESLint + Prettier check                                           |
+| `npm run format`                 | Prettier write                                                                 |
+| `npm run test`                   | Vitest unit/component (API mocked with MSW)                                    |
+| `npm run test:e2e`               | Playwright smoke (API mocked via route interception)                           |
+| `npm run generate:api`           | regenerate the typed client from the vendored spec                             |
+| `npm run vendor-contracts`       | re-vendor the spec from `SessionLayer/Contracts` (pinned via `contracts.lock`) |
+| `npm run vendor-contracts:check` | drift check: vendored spec vs the pinned tag                                   |
+| `./scripts/gate.sh`              | full ROUND_FINAL gate (also `make dash-gate`)                                  |
 
 E2E needs the Chromium browser: `npx playwright install --with-deps chromium`
 once (CI does this each run).
