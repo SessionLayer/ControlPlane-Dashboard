@@ -65,9 +65,8 @@ export function CorrelatedStory({
 
       {correlationId === undefined ? (
         <p className="muted">
-          This event has no correlation id yet — the write-path correlation
-          backfill is a later release, so a full correlated path is not
-          available.
+          This event carries no correlation id, so a full correlated path
+          isn&rsquo;t available for it.
         </p>
       ) : (
         <div className="story">

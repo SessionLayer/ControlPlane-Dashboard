@@ -22,7 +22,7 @@ import type {
   JitApprovalLevel,
   JitPolicyResource,
 } from '../../api/types';
-import { CrudScreen, OriginBadge, FormDialog } from './common';
+import { CrudScreen, OriginBadge, FormDialog, SelectorSummary } from './common';
 import {
   CAPABILITY_OPTIONS,
   APPROVAL_KIND_OPTIONS,
@@ -53,6 +53,10 @@ export function JitPoliciesScreen() {
 
   const columns: Column<JitPolicyResource>[] = [
     { header: 'Name', cell: (r) => r.name },
+    {
+      header: 'Requestable targets',
+      cell: (r) => <SelectorSummary selector={r.targetSelector} />,
+    },
     {
       header: 'Capabilities',
       cell: (r) =>

@@ -46,6 +46,19 @@ export function NodePoliciesScreen() {
       header: 'Desired labels',
       cell: (r) => <LabelMapView labels={r.desiredLabels} />,
     },
+    {
+      header: 'Host trust',
+      cell: (r) => {
+        const refs = [r.hostPinRef, r.hostCaRef].filter(
+          (v): v is string => v !== undefined && v !== '',
+        );
+        return refs.length > 0 ? (
+          refs.join(' · ')
+        ) : (
+          <span className="muted">—</span>
+        );
+      },
+    },
     { header: 'Origin', cell: (r) => <OriginBadge origin={r.origin} /> },
     { header: 'Version', cell: (r) => r.version, align: 'right' },
     { header: 'Updated', cell: (r) => <Time value={r.updatedAt} /> },

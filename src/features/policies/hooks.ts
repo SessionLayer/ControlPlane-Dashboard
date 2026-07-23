@@ -17,6 +17,9 @@ import type {
   NodePolicyResource,
   CreateNodePolicyRequest,
   UpdateNodePolicyRequest,
+  SessionLimitPolicyResource,
+  CreateSessionLimitPolicyRequest,
+  UpdateSessionLimitPolicyRequest,
 } from '../../api/types';
 
 // ---------------------------------------------------------------- capability-defs
@@ -272,5 +275,72 @@ export function useDeleteNodePolicy() {
     },
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: resourceKey('node-policies') }),
+  });
+}
+
+// ------------------------------------------------------------ session-limit-policies
+export function useSessionLimitPolicies() {
+  return useCursorList<SessionLimitPolicyResource>(
+    resourceKey('session-limit-policies'),
+    async (cursor, signal) =>
+      unwrap(
+        await api.GET('/v1/session-limit-policies', {
+          params: { query: { cursor } },
+          signal,
+        }),
+      ),
+  );
+}
+
+export function useCreateSessionLimitPolicy() {
+  const qc = useQueryClient();
+  const idem = useIdempotencyKey();
+  return useMutation({
+    mutationFn: async (body: CreateSessionLimitPolicyRequest) =>
+      unwrap(
+        await api.POST('/v1/session-limit-policies', {
+          body,
+          params: { header: idem.header() },
+        }),
+      ),
+    onSuccess: () => {
+      idem.reset();
+      return qc.invalidateQueries({
+        queryKey: resourceKey('session-limit-policies'),
+      });
+    },
+  });
+}
+
+export function useUpdateSessionLimitPolicy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: {
+      id: string;
+      body: UpdateSessionLimitPolicyRequest;
+    }) =>
+      unwrap(
+        await api.PUT('/v1/session-limit-policies/{sessionLimitPolicyId}', {
+          params: { path: { sessionLimitPolicyId: args.id } },
+          body: args.body,
+        }),
+      ),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: resourceKey('session-limit-policies') }),
+  });
+}
+
+export function useDeleteSessionLimitPolicy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      unwrap(
+        await api.DELETE('/v1/session-limit-policies/{sessionLimitPolicyId}', {
+          params: { path: { sessionLimitPolicyId: id } },
+        }),
+      );
+    },
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: resourceKey('session-limit-policies') }),
   });
 }

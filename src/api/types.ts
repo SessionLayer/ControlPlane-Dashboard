@@ -85,6 +85,12 @@ export type BreakglassPolicyResource = S['BreakglassPolicyResource'];
 export type CreateBreakglassPolicyRequest = S['CreateBreakglassPolicyRequest'];
 export type UpdateBreakglassPolicyRequest = S['UpdateBreakglassPolicyRequest'];
 export type BreakglassPolicyPage = S['BreakglassPolicyPage'];
+export type SessionLimitPolicyResource = S['SessionLimitPolicyResource'];
+export type CreateSessionLimitPolicyRequest =
+  S['CreateSessionLimitPolicyRequest'];
+export type UpdateSessionLimitPolicyRequest =
+  S['UpdateSessionLimitPolicyRequest'];
+export type SessionLimitPolicyPage = S['SessionLimitPolicyPage'];
 
 // Nodes
 export type NodeResource = S['NodeResource'];

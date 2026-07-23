@@ -28,19 +28,6 @@ export interface AuditFilters {
   correlationId?: string;
 }
 
-/**
- * The subset of filters that the write path does not yet populate (a Session 20
- * backfill). They are contract-complete and sent, but may return no rows on a
- * live system; the UI surfaces an inline note for them.
- */
-export const WRITE_INERT_FILTERS = [
-  'sourceIp',
-  'capability',
-  'accessModel',
-  'nodeLabel',
-  'correlationId',
-] as const;
-
 type AuditQuery = Omit<AuditFilters, 'capability' | 'accessModel'> & {
   capability?: Capability;
   accessModel?: AccessModel;
