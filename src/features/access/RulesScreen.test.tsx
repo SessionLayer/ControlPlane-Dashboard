@@ -108,6 +108,46 @@ describe('RulesScreen', () => {
     });
   });
 
+  // S29 (FR-SESS-2): the CP grant is the sole switch for forwarding/X11 — every
+  // capability in the contract vocabulary is grantable here and actually lands
+  // in the submitted payload, not just rendered.
+  it('grants all eight capabilities through the create payload', async () => {
+    const allCapabilities = [
+      'shell',
+      'exec',
+      'sftp',
+      'scp',
+      'port_forward_local',
+      'port_forward_remote',
+      'agent_forward',
+      'x11',
+    ];
+    let body: Record<string, unknown> | undefined;
+    server.use(
+      http.get(cp('/v1/rules'), () => page([rule()])),
+      http.post(cp('/v1/rules'), async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json(rule({ name: 'fwd-rule' }), { status: 201 });
+      }),
+    );
+    renderWithProviders(<RulesScreen />, {
+      authenticated: true,
+      permissions: [...WRITE],
+    });
+    await screen.findByText('prod-shell');
+    fireEvent.click(screen.getByRole('button', { name: 'New rule…' }));
+    for (const capability of allCapabilities) {
+      fireEvent.click(screen.getByRole('checkbox', { name: capability }));
+    }
+    fireEvent.change(screen.getByRole('textbox', { name: 'Name' }), {
+      target: { value: 'fwd-rule' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Create rule' }));
+    await waitFor(() => {
+      expect(body?.capabilities).toEqual(allCapabilities);
+    });
+  });
+
   it('sends the version on edit', async () => {
     let body: Record<string, unknown> | undefined;
     server.use(
