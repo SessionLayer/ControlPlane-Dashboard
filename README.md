@@ -49,8 +49,8 @@ discipline.
 ## Scripts
 
 `npm run` &nbsp;`dev` · `build` · `lint` · `format` · `test` · `test:e2e` ·
-`generate:api` · `sync-contracts`. The full quality gate is `./scripts/gate.sh`
-(or `make dash-gate` from the parent).
+`generate:api` · `vendor-contracts` · `vendor-contracts:check`. The full
+quality gate is `./scripts/gate.sh` (or `make dash-gate` from the parent).
 
 ## Documentation
 
