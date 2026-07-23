@@ -59,18 +59,15 @@
   margin: 0;
   padding: 0;
 }
-.audit-inert {
-  border: 1px dashed var(--border);
+.audit-more-filters {
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.5rem 0.75rem 0.75rem;
 }
-.audit-inert > legend {
+.audit-more-filters > legend {
   font-size: 0.85rem;
   color: var(--muted);
   padding: 0 0.25rem;
-}
-.audit-inert-note {
-  font-style: italic;
 }
 .filter-actions {
   display: flex;
