@@ -33,6 +33,23 @@ describe('LockList', () => {
     expect(
       screen.getByText(/identities: mallory@corp\.example/),
     ).toBeInTheDocument();
+    // "Kind" is derived from which target facet is populated (no separate
+    // contract field) — an identities-only target reads as "identity".
+    expect(screen.getByText('identity')).toBeInTheDocument();
+  });
+
+  it('derives Kind "fleet-wide" for an all:true target', async () => {
+    server.use(
+      http.get(cp('/v1/locks'), () =>
+        ok({ locks: [lock({ target: { all: true }, reason: 'Incident' })] }),
+      ),
+    );
+    renderWithProviders(<LockList />, {
+      authenticated: true,
+      permissions: [...WRITE],
+    });
+    await screen.findByText('Incident');
+    expect(screen.getByText('fleet-wide')).toBeInTheDocument();
   });
 
   it('shows an empty state when there are no locks', async () => {

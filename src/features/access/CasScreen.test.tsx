@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
@@ -127,7 +127,50 @@ describe('CasScreen', () => {
     });
   });
 
-  it('rotates a CA after confirmation', async () => {
+  it('surfaces a 409 stale-version conflict with a reload hint', async () => {
+    server.use(
+      http.get(cp('/v1/cas'), () => page([ca({ version: 7 })])),
+      http.put(cp('/v1/cas/:caId'), () => problem(409, 'Version conflict')),
+    );
+    renderWithProviders(<CasScreen />, {
+      authenticated: true,
+      permissions: [...MANAGE],
+    });
+    fireEvent.click(await screen.findByText('user-ca'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Save changes' }),
+    );
+
+    expect(await screen.findByText('Version conflict')).toBeInTheDocument();
+    expect(
+      screen.getByText(/changed since you loaded it/i),
+    ).toBeInTheDocument();
+  });
+
+  it('rotates a CA after confirmation via the inline row action', async () => {
+    let rotated = false;
+    server.use(
+      http.get(cp('/v1/cas'), () => page([ca()])),
+      http.post(cp('/v1/cas/:caId/rotate'), () => {
+        rotated = true;
+        return HttpResponse.json(ca());
+      }),
+    );
+    renderWithProviders(<CasScreen />, {
+      authenticated: true,
+      permissions: [...MANAGE],
+    });
+    await screen.findByText('user-ca');
+    fireEvent.click(screen.getByRole('button', { name: 'Rotate' }));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Rotate' }));
+    await waitFor(() => {
+      expect(rotated).toBe(true);
+    });
+  });
+
+  it('rotates a CA from the detail dialog too', async () => {
     let rotated = false;
     server.use(
       http.get(cp('/v1/cas'), () => page([ca()])),
@@ -141,11 +184,25 @@ describe('CasScreen', () => {
       permissions: [...MANAGE],
     });
     fireEvent.click(await screen.findByText('user-ca'));
-    fireEvent.click(await screen.findByRole('button', { name: 'Rotate' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Rotate' }));
+    const detail = screen.getByRole('dialog');
+    fireEvent.click(within(detail).getByRole('button', { name: 'Rotate' }));
+    const confirm = screen.getByRole('dialog');
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Rotate' }));
     await waitFor(() => {
       expect(rotated).toBe(true);
     });
+  });
+
+  it('hides the inline Rotate action without ca:rotate', async () => {
+    server.use(http.get(cp('/v1/cas'), () => page([ca()])));
+    renderWithProviders(<CasScreen />, {
+      authenticated: true,
+      permissions: ['ca:manage'],
+    });
+    await screen.findByText('user-ca');
+    expect(
+      screen.queryByRole('button', { name: 'Rotate' }),
+    ).not.toBeInTheDocument();
   });
 
   it('deletes a CA after confirmation', async () => {

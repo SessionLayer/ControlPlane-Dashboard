@@ -20,7 +20,7 @@ const REC: RecordingResource = {
   legalHold: false,
   retentionUntil: '2027-01-01T00:00:00Z',
   startedAt: '2026-07-01T00:00:00Z',
-  createdAt: '2026-07-01T00:00:00Z',
+  createdAt: '2026-07-01T00:05:00Z',
 };
 
 describe('RecordingsScreen', () => {
@@ -32,6 +32,10 @@ describe('RecordingsScreen', () => {
     });
     expect(await screen.findByText('alice')).toBeInTheDocument();
     expect(screen.getByText('finalized')).toBeInTheDocument();
+    // "Created" (createdAt) is distinct from "Started" (session start) —
+    // both real contract fields, both shown.
+    expect(screen.getByText('Created')).toBeInTheDocument();
+    expect(screen.getByTitle('2026-07-01T00:05:00.000Z')).toBeInTheDocument();
   });
 
   it('renders an empty state', async () => {

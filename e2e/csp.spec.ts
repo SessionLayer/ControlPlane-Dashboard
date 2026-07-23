@@ -106,8 +106,10 @@ async function signIn(page: Page): Promise<void> {
   );
 
   await page.goto('/');
-  await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Continue with SSO (OIDC)' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Continue with SSO (OIDC)' }).click();
   await expect(page.getByText('E2E Admin')).toBeVisible();
 }
 

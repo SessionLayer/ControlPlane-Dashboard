@@ -33,6 +33,14 @@ const SUBJECT_KIND_OPTIONS: readonly { value: SubjectKind; label: string }[] = [
   { value: 'group', label: 'group' },
 ];
 
+/** A compact `k=v k2=v2` summary of the scope selector for the list column. */
+function scopeSummary(scope: Record<string, unknown> | undefined): string {
+  if (scope === undefined) return 'global';
+  const entries = Object.entries(scope);
+  if (entries.length === 0) return 'global';
+  return entries.map(([k, v]) => `${k}=${String(v)}`).join(' ');
+}
+
 type Dialog =
   | { kind: 'create' }
   | { kind: 'detail'; row: RoleBindingResource }
@@ -224,7 +232,16 @@ export function RoleBindingsScreen() {
       ),
     },
     { header: 'Role ID', cell: (r) => r.roleId },
+    {
+      header: 'Scope',
+      cell: (r) => <span className="mono">{scopeSummary(r.scope)}</span>,
+    },
     { header: 'Origin', cell: (r) => <OriginBadge origin={r.origin} /> },
+    {
+      header: 'Ver',
+      cell: (r) => <span className="mono">v{r.version}</span>,
+      align: 'right',
+    },
   ];
 
   return (

@@ -49,6 +49,8 @@ export function useNode(nodeId: string | undefined) {
   });
 }
 
+// NB: no contract-defined Idempotency-Key parameter on this operation — OBS-1
+// (see the session report; same gap as the S17-post-dating IR/access mutations).
 export function useRegisterNode() {
   const qc = useQueryClient();
   return useMutation({

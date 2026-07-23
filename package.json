@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "SessionLayer Control Plane admin dashboard \u2014 a typed client of the OpenAPI contract.",
+  "description": "SessionLayer Control Plane admin dashboard — a typed client of the OpenAPI contract.",
   "license": "GPL-3.0-only",
   "packageManager": "npm@10.9.8",
   "engines": {
@@ -23,6 +23,7 @@
     "sbom": "cyclonedx-npm --output-format JSON --spec-version 1.6 --output-reproducible --output-file sbom.cdx.json"
   },
   "dependencies": {
+    "@fontsource/jetbrains-mono": "5.3.0",
     "@tanstack/react-query": "^5.62.0",
     "@tanstack/react-router": "^1.87.0",
     "openapi-fetch": "^0.17.0",

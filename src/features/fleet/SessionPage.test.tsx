@@ -64,6 +64,32 @@ describe('SessionPage', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('shows capabilities and a derived duration per session', async () => {
+    server.use(
+      http.get(cp('/v1/sessions'), () =>
+        page([
+          session({
+            id: 's3',
+            identity: 'carol@corp',
+            capabilities: ['shell', 'exec'],
+            startedAt: '2026-07-16T10:00:00Z',
+            endedAt: '2026-07-16T10:01:30Z',
+          }),
+        ]),
+      ),
+    );
+    renderWithProviders(<SessionPage />, {
+      authenticated: true,
+      permissions: [...RW],
+    });
+
+    await screen.findByText('carol@corp');
+    expect(screen.getByText('shell')).toBeInTheDocument();
+    expect(screen.getByText('exec')).toBeInTheDocument();
+    // 90s between started/ended, purely derived from the two real timestamps.
+    expect(screen.getByText('1m')).toBeInTheDocument();
+  });
+
   it('offers Terminate only for active sessions', async () => {
     server.use(http.get(cp('/v1/sessions'), () => page([alice, bob])));
     renderWithProviders(<SessionPage />, {

@@ -27,3 +27,14 @@ export function shortId(id: string | undefined): string {
   if (id === undefined || id === '') return '—';
   return id.length > 12 ? `${id.slice(0, 8)}…` : id;
 }
+
+/** A terse `k=v k2=v2` rendering of an audit event's `detail` selector for a table cell. */
+export function summarizeDetail(
+  detail: Record<string, unknown> | undefined,
+): string {
+  const entries = detail ? Object.entries(detail) : [];
+  if (entries.length === 0) return '—';
+  return entries
+    .map(([k, v]) => `${k}=${typeof v === 'string' ? v : JSON.stringify(v)}`)
+    .join(' ');
+}

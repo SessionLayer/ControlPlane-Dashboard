@@ -14,9 +14,29 @@ import {
 } from '../../ui';
 import { useCan } from '../../auth/AuthContext';
 import type { AccessModel, SessionResource } from '../../api/types';
-import { AccessModelBadge } from './badges';
+import { AccessModelBadge, CapabilityBadges } from './badges';
 import { useSessions, type SessionFilters } from './api';
 import { SessionDetailDialog, TerminateSessionDialog } from './SessionDialogs';
+
+/** `startedAt`→`endedAt` (or `now` for a live session) as a compact clock —
+ *  purely derived from the two real timestamps the API already returns. */
+function formatDuration(
+  startedAt: string,
+  endedAt: string | undefined,
+  now: number,
+): string {
+  const start = Date.parse(startedAt);
+  if (Number.isNaN(start)) return '—';
+  const end = endedAt !== undefined ? Date.parse(endedAt) : now;
+  if (Number.isNaN(end)) return '—';
+  const totalSeconds = Math.max(0, Math.round((end - start) / 1000));
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  if (h > 0) return `${String(h)}h ${String(m).padStart(2, '0')}m`;
+  if (m > 0) return `${String(m)}m`;
+  return `${String(s)}s`;
+}
 
 type AccessFilter = AccessModel | 'all';
 
@@ -37,6 +57,9 @@ export function SessionPage() {
   const [access, setAccess] = useState<AccessFilter>('all');
   const [activeOnly, setActiveOnly] = useState(false);
   const [dialog, setDialog] = useState<Dialog>(null);
+  // Snapshot once per mount (not read impurely during render) — a live
+  // session's Duration is a point-in-time label, same convention as `Time`.
+  const [now] = useState(() => Date.now());
 
   const filters: SessionFilters = {
     ...(identity.trim() !== '' ? { identity: identity.trim() } : {}),
@@ -76,10 +99,18 @@ export function SessionPage() {
     },
     { header: 'Principal', cell: (s) => s.principal },
     {
+      header: 'Capability',
+      cell: (s) => <CapabilityBadges caps={s.capabilities} />,
+    },
+    {
       header: 'Access',
       cell: (s) => <AccessModelBadge model={s.accessModel} />,
     },
     { header: 'Started', cell: (s) => <Time value={s.startedAt} /> },
+    {
+      header: 'Duration',
+      cell: (s) => formatDuration(s.startedAt, s.endedAt, now),
+    },
     { header: 'Ended', cell: (s) => <Time value={s.endedAt} /> },
     {
       header: 'Actions',

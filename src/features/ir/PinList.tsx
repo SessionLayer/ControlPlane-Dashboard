@@ -9,19 +9,23 @@ import {
   type Column,
   ConfirmDialog,
   DataTable,
+  Detail,
+  DetailList,
   Dialog,
   EmptyState,
   NumberField,
   PageHeader,
   ProblemAlert,
+  SecretReveal,
   TagField,
   TextField,
   Time,
 } from '../../ui';
-import { useCreatePin, usePins, useRevokePin } from './hooks';
+import { useCreatePin, useIssueOtp, usePins, useRevokePin } from './hooks';
 import './ir.css';
 
-type Modal = { kind: 'create' } | { kind: 'revoke'; row: PinResource };
+type Modal =
+  { kind: 'create' } | { kind: 'revoke'; row: PinResource } | { kind: 'otp' };
 
 export function PinList() {
   const [identity, setIdentity] = useState('');
@@ -71,18 +75,28 @@ export function PinList() {
   return (
     <section className="stack">
       <PageHeader
-        title="Pins"
-        description="AuthN-shortcut pins binding a key fingerprint to an identity (Design §5.5)."
+        title="Pins & OTP"
+        description="AuthN shortcuts: key-fingerprint pins bound to an identity (Design §5.5) and admin-issued single-use OTPs (Design §5.4)."
         actions={
           canManage ? (
-            <Button
-              variant="primary"
-              onClick={() => {
-                setModal({ kind: 'create' });
-              }}
-            >
-              New pin…
-            </Button>
+            <div className="cluster">
+              <Button
+                variant="info"
+                onClick={() => {
+                  setModal({ kind: 'otp' });
+                }}
+              >
+                Issue OTP…
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setModal({ kind: 'create' });
+                }}
+              >
+                New pin…
+              </Button>
+            </div>
           ) : undefined
         }
       />
@@ -122,7 +136,112 @@ export function PinList() {
       {modal?.kind === 'revoke' && (
         <RevokePinDialog pin={modal.row} onClose={close} />
       )}
+      {modal?.kind === 'otp' && (
+        <IssueOtpDialog defaultIdentity={trimmed} onClose={close} />
+      )}
     </section>
+  );
+}
+
+function IssueOtpDialog({
+  defaultIdentity,
+  onClose,
+}: {
+  defaultIdentity: string;
+  onClose: () => void;
+}) {
+  const [identity, setIdentity] = useState(defaultIdentity);
+  const [allowedPrincipals, setAllowedPrincipals] = useState<string[]>([]);
+  const [sourceCidr, setSourceCidr] = useState('');
+  const [ttl, setTtl] = useState<number | ''>('');
+  const issue = useIssueOtp();
+  const issued = issue.data;
+
+  const valid = identity.trim() !== '' && allowedPrincipals.length > 0;
+
+  const onSubmit = () => {
+    issue.mutate({
+      identity: identity.trim(),
+      allowedPrincipals,
+      ...(sourceCidr.trim() !== '' ? { sourceCidr: sourceCidr.trim() } : {}),
+      ...(typeof ttl === 'number' ? { ttlSeconds: ttl } : {}),
+    });
+  };
+
+  if (issued !== undefined) {
+    return (
+      <Dialog
+        title="OTP issued"
+        onClose={onClose}
+        footer={
+          <Button variant="primary" onClick={onClose}>
+            Done
+          </Button>
+        }
+      >
+        <div className="stack">
+          <SecretReveal
+            value={issued.otp}
+            caption="Deliver this OTP out-of-band now — it is shown once and only its hash is stored."
+          />
+          <DetailList>
+            <Detail label="Expires">
+              <Time value={issued.expiresAt} />
+            </Detail>
+          </DetailList>
+        </div>
+      </Dialog>
+    );
+  }
+
+  return (
+    <Dialog
+      title="Issue OTP"
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={issue.isPending}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={onSubmit}
+            disabled={!valid || issue.isPending}
+          >
+            {issue.isPending ? 'Issuing…' : 'Issue OTP'}
+          </Button>
+        </>
+      }
+    >
+      <div className="stack">
+        <TextField
+          label="Identity"
+          value={identity}
+          onChange={setIdentity}
+          required
+        />
+        <TagField
+          label="Allowed principals"
+          values={allowedPrincipals}
+          onChange={setAllowedPrincipals}
+        />
+        <TextField
+          label="Source CIDR (optional)"
+          value={sourceCidr}
+          onChange={setSourceCidr}
+          placeholder="203.0.113.0/24"
+          hint="Deny-only reducer — an OTP never grants beyond the authorization."
+        />
+        <NumberField
+          label="TTL (seconds, optional)"
+          value={ttl}
+          onChange={setTtl}
+          min={60}
+          hint="60–300s; defaults to the operator setting when left empty."
+        />
+        {issue.error !== null && <ProblemAlert error={issue.error} />}
+      </div>
+    </Dialog>
   );
 }
 

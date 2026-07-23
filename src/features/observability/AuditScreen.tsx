@@ -3,7 +3,6 @@ import { useState } from 'react';
 import {
   AsyncList,
   Badge,
-  Button,
   DataTable,
   LoadMore,
   PageHeader,
@@ -15,7 +14,7 @@ import { AuditFilters } from './AuditFilters';
 import { useAuditEvents, type AuditFilters as Filters } from './auditHooks';
 import { outcomeTone } from './badges';
 import { CorrelatedStory } from './CorrelatedStory';
-import { shortId } from './format';
+import { shortId, summarizeDetail } from './format';
 
 const EMPTY: Filters = {};
 
@@ -25,30 +24,22 @@ export function AuditScreen() {
   const list = useAuditEvents(filters);
   const [selected, setSelected] = useState<AuditEventResource | undefined>();
 
+  // Column set mirrors the operator-console audit-log design (Time / Type /
+  // Detail / Actor / Correlation / Decision); a row click reconstructs the
+  // full correlated story, including the fields (subject, session, node,
+  // source IP) that don't fit in this dense row.
   const columns: Column<AuditEventResource>[] = [
     { header: 'Time', cell: (e) => <Time value={e.occurredAt} /> },
+    { header: 'Type', cell: (e) => <code>{e.action}</code> },
+    { header: 'Detail', cell: (e) => summarizeDetail(e.detail) },
     { header: 'Actor', cell: (e) => e.actor },
-    { header: 'Action', cell: (e) => <code>{e.action}</code> },
     {
-      header: 'Outcome',
-      cell: (e) => <Badge tone={outcomeTone(e.outcome)}>{e.outcome}</Badge>,
+      header: 'Correlation',
+      cell: (e) => <code>{shortId(e.correlationId)}</code>,
     },
-    { header: 'Subject', cell: (e) => e.subject ?? '—' },
-    { header: 'Source IP', cell: (e) => e.sourceIp ?? '—' },
-    { header: 'Node', cell: (e) => <code>{shortId(e.nodeId)}</code> },
     {
-      header: 'Story',
-      cell: (e) => (
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => {
-            setSelected(e);
-          }}
-        >
-          View story
-        </Button>
-      ),
+      header: 'Decision',
+      cell: (e) => <Badge tone={outcomeTone(e.outcome)}>{e.outcome}</Badge>,
     },
   ];
 

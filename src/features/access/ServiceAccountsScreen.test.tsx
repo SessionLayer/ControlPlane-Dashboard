@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
@@ -131,6 +131,29 @@ describe('ServiceAccountsScreen', () => {
     });
   });
 
+  it('surfaces a 409 stale-version conflict with a reload hint', async () => {
+    server.use(
+      http.get(cp('/v1/service-accounts'), () => page([sa({ version: 4 })])),
+      http.put(cp('/v1/service-accounts/:serviceAccountId'), () =>
+        problem(409, 'Version conflict'),
+      ),
+    );
+    renderWithProviders(<ServiceAccountsScreen />, {
+      authenticated: true,
+      permissions: [...MANAGE],
+    });
+    fireEvent.click(await screen.findByText('ci-deployer'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Save changes' }),
+    );
+
+    expect(await screen.findByText('Version conflict')).toBeInTheDocument();
+    expect(
+      screen.getByText(/changed since you loaded it/i),
+    ).toBeInTheDocument();
+  });
+
   it('issues a credential and reveals the one-time secret', async () => {
     server.use(
       http.get(cp('/v1/service-accounts'), () => page([sa()])),
@@ -159,7 +182,7 @@ describe('ServiceAccountsScreen', () => {
     expect(await screen.findByText('super-secret-once')).toBeInTheDocument();
   });
 
-  it('revokes a credential by id', async () => {
+  it('revokes a credential by id behind a confirm dialog', async () => {
     let revoked = false;
     server.use(
       http.get(cp('/v1/service-accounts'), () => page([sa()])),
@@ -180,8 +203,50 @@ describe('ServiceAccountsScreen', () => {
       target: { value: 'cred-123' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Revoke' }));
+
+    // Revoke is irreversible (denies new sessions immediately) — it must not
+    // fire until the operator confirms in the dialog.
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Revoke this credential?',
+    });
+    expect(revoked).toBe(false);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Revoke' }));
+
     await waitFor(() => {
       expect(revoked).toBe(true);
     });
+  });
+
+  it('cancelling the revoke confirm dialog does not revoke the credential', async () => {
+    let revoked = false;
+    server.use(
+      http.get(cp('/v1/service-accounts'), () => page([sa()])),
+      http.delete(
+        cp('/v1/service-accounts/:serviceAccountId/credentials/:credentialId'),
+        () => {
+          revoked = true;
+          return new HttpResponse(null, { status: 204 });
+        },
+      ),
+    );
+    renderWithProviders(<ServiceAccountsScreen />, {
+      authenticated: true,
+      permissions: [...MANAGE],
+    });
+    fireEvent.click(await screen.findByText('ci-deployer'));
+    fireEvent.change(await screen.findByLabelText('Revoke credential by ID'), {
+      target: { value: 'cred-123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Revoke' }));
+
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Revoke this credential?',
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+    expect(
+      screen.queryByRole('dialog', { name: 'Revoke this credential?' }),
+    ).not.toBeInTheDocument();
+    expect(revoked).toBe(false);
   });
 });

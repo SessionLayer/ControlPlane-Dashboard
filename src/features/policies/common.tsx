@@ -9,11 +9,17 @@ import {
   Badge,
   Dialog,
   ProblemAlert,
+  LabelMapView,
   type Column,
   type BadgeTone,
 } from '../../ui';
 import type { CursorListResult } from '../../api/http';
-import type { Origin } from '../../api/types';
+import type {
+  JitApprovalLevel,
+  LabelMap,
+  Origin,
+  Selector,
+} from '../../api/types';
 import { conflictHint } from './helpers';
 
 const ORIGIN_TONE: Record<Origin, BadgeTone> = {
@@ -25,6 +31,51 @@ const ORIGIN_TONE: Record<Origin, BadgeTone> = {
 /** The read-only provenance pill every config resource carries (Design §13). */
 export function OriginBadge({ origin }: { origin: Origin }) {
   return <Badge tone={ORIGIN_TONE[origin]}>{origin}</Badge>;
+}
+
+/**
+ * A compact chip-row summary of a `Selector` (shape-validated jsonb, so its
+ * values are `unknown`) for list-table cells — the full JSON stays available
+ * in the detail dialog's `CodeBlock`. Non-string values are stringified for
+ * display only, never sent back.
+ */
+export function SelectorSummary({
+  selector,
+}: {
+  selector: Selector | undefined;
+}) {
+  const entries = selector ? Object.entries(selector) : [];
+  if (entries.length === 0) return <span className="muted">—</span>;
+  const labels: LabelMap = Object.fromEntries(
+    entries.map(([k, v]) => [k, typeof v === 'string' ? v : JSON.stringify(v)]),
+  );
+  return <LabelMapView labels={labels} />;
+}
+
+/**
+ * A compact "N levels (kind:value → kind:value)" summary of a JIT policy's
+ * approval chain for list-table cells (mirrors `SelectorSummary`) — the full
+ * per-level detail stays in the detail dialog.
+ */
+export function ApprovalChainSummary({
+  chain,
+}: {
+  chain: JitApprovalLevel[] | undefined;
+}) {
+  if (chain === undefined || chain.length === 0) {
+    return <span className="muted">auto-approve (0 levels)</span>;
+  }
+  const levels = chain
+    .map((l) =>
+      l.kind !== undefined && l.value !== undefined
+        ? `${l.kind}:${l.value}`
+        : undefined,
+    )
+    .filter((v): v is string => v !== undefined);
+  const suffix = levels.length > 0 ? ` (${levels.join(' → ')})` : '';
+  return (
+    <span>{`${String(chain.length)} level${chain.length > 1 ? 's' : ''}${suffix}`}</span>
+  );
 }
 
 /**

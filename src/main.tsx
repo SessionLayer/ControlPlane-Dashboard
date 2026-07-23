@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { ProblemError } from './api/problem';
 import { AuthProvider } from './auth/AuthContext';
 import { router } from './router';
+import './fonts.css';
 import './index.css';
 
 const queryClient = new QueryClient({

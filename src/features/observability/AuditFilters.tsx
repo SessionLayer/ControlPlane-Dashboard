@@ -43,10 +43,14 @@ function DateTimeField({
 }
 
 /**
- * The audit search form over every contract dimension (FR-AUD-8/9). Some
- * dimensions are contract-complete but not yet populated by the write path
- * (a Session 20 backfill) — flagged inline so results reading empty is expected,
- * not a bug.
+ * The audit search form over every contract dimension (FR-AUD-8/9): identity,
+ * subject, action, outcome, session, node (+ node label), source IP,
+ * capability, access model, time range, and correlation id — all real,
+ * write-path-populated search dimensions the `/v1/audit-events` search
+ * accepts. Backfilled and Verified-Fixed in Session 20 Part B (closed
+ * S18 finding `F-audit-write-dimensions-1`; regression: CP's
+ * `AuthorizeIT` scoped-auditor full-chain assertion) — see
+ * `Docs/sessions/twenty/RESULT.md` §3.
  */
 export function AuditFilters({
   draft,
@@ -131,15 +135,8 @@ export function AuditFilters({
         />
       </div>
 
-      <fieldset className="filter-grid audit-inert">
-        <legend>
-          Extended dimensions
-          <span className="audit-inert-note">
-            {' '}
-            — recorded by the audit write path in a later release; filtering on
-            these may return no results today.
-          </span>
-        </legend>
+      <fieldset className="filter-grid audit-more-filters">
+        <legend>More dimensions</legend>
         <TextField
           label="Source IP"
           value={draft.sourceIp ?? ''}

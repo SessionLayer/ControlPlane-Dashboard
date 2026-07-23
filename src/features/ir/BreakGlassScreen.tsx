@@ -39,8 +39,8 @@ import './ir.css';
 type TabId = 'activations' | 'credentials' | 'offline-codes';
 const TABS: { id: TabId; label: string }[] = [
   { id: 'activations', label: 'Activations' },
-  { id: 'credentials', label: 'Credentials' },
-  { id: 'offline-codes', label: 'Offline codes' },
+  { id: 'credentials', label: 'FIDO2 credentials' },
+  { id: 'offline-codes', label: 'Offline code batches' },
 ];
 
 const PANEL_ID = 'bg-tabpanel';

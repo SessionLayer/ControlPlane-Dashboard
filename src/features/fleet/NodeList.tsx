@@ -6,6 +6,7 @@ import {
   DataTable,
   LabelMapView,
   PageHeader,
+  Time,
   type Column,
 } from '../../ui';
 import { useCan } from '../../auth/AuthContext';
@@ -53,13 +54,16 @@ export function NodeList() {
       header: 'Connector',
       cell: (n) => <ConnectorBadge kind={n.connectorKind} />,
     },
+    { header: 'Labels', cell: (n) => <LabelMapView labels={n.labels} /> },
     { header: 'Status', cell: (n) => <NodeStatusBadge status={n.status} /> },
     { header: 'Health', cell: (n) => <NodeHealthBadge health={n.health} /> },
     {
-      header: 'Address',
-      cell: (n) => n.address ?? <span className="muted">—</span>,
+      // No heartbeat/liveness telemetry exists in the contract (NodeResource
+      // has no lastSeenAt) — `updatedAt` (last record mutation) is the closest
+      // honest proxy for the mockup's "Last seen" column. See Session 27 OBS.
+      header: 'Last seen',
+      cell: (n) => <Time value={n.updatedAt} />,
     },
-    { header: 'Labels', cell: (n) => <LabelMapView labels={n.labels} /> },
     {
       header: 'Actions',
       align: 'right',

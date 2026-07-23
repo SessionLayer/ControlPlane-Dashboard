@@ -62,14 +62,15 @@ describe('AuditScreen', () => {
     expect(await screen.findByText('Not permitted')).toBeInTheDocument();
   });
 
-  it('notes the write-inert extended dimensions', async () => {
+  it('renders the full search dimension set as real (non-inert) filters', async () => {
     server.use(http.get(cp('/v1/audit-events'), () => page([])));
     renderScreen();
+    await screen.findByText('No audit events match.');
+    expect(screen.getByLabelText('Source IP')).toBeInTheDocument();
+    expect(screen.getByLabelText('Correlation ID')).toBeInTheDocument();
     expect(
-      await screen.findByText(
-        /recorded by the audit write path in a later release/i,
-      ),
-    ).toBeInTheDocument();
+      screen.queryByText(/may return no results today/i),
+    ).not.toBeInTheDocument();
   });
 
   it('sends filter query params on search', async () => {
@@ -102,7 +103,7 @@ describe('AuditScreen', () => {
     renderScreen();
     await screen.findByText('alice');
 
-    fireEvent.click(screen.getByRole('button', { name: 'View story' }));
+    fireEvent.click(screen.getByText('alice'));
     // The dialog shows the whole correlated path in chronological order.
     expect(await screen.findByText('auth.login')).toBeInTheDocument();
     expect(screen.getByText('Correlated path')).toBeInTheDocument();

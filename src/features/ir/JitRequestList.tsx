@@ -42,7 +42,7 @@ import {
 } from './status';
 import './ir.css';
 
-type DecisionKind = 'approve' | 'deny' | 'revoke';
+export type DecisionKind = 'approve' | 'deny' | 'revoke';
 type Modal =
   | { kind: 'submit' }
   | { kind: 'detail'; row: JitRequestResource }
@@ -64,20 +64,25 @@ export function JitRequestList() {
   };
 
   const columns: Column<JitRequestResource>[] = [
+    {
+      header: 'Request',
+      cell: (r) => <span className="mono">{r.id.slice(0, 8)}</span>,
+    },
     { header: 'Requester', cell: (r) => r.requester },
     {
       header: 'Target',
       cell: (r) => r.targetNodeName ?? r.targetNodeId ?? '—',
     },
     { header: 'Principal', cell: (r) => r.principal },
+    { header: 'Reason', cell: (r) => r.reason },
+    {
+      header: 'Chain',
+      cell: (r) =>
+        `${String(r.approvals?.length ?? 0)}/${String(r.approvalChain?.length ?? 0)}`,
+    },
     {
       header: 'State',
       cell: (r) => <Badge tone={jitStateTone(r.state)}>{r.state}</Badge>,
-    },
-    {
-      header: 'Approvals',
-      cell: (r) =>
-        `${String(r.approvals?.length ?? 0)}/${String(r.approvalChain?.length ?? 0)}`,
     },
     { header: 'Requested', cell: (r) => <Time value={r.requestedAt} /> },
     {
@@ -217,7 +222,9 @@ const DECISION_COPY: Record<
   },
 };
 
-function JitDecisionDialog({
+/** Exported so the Overview screen can offer the same inline Approve/Deny flow
+ *  without duplicating the mutation wiring (SESSION.md §1.1-C). */
+export function JitDecisionDialog({
   kind,
   request,
   onClose,

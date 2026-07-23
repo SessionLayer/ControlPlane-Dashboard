@@ -7,13 +7,15 @@ import type {
   JitPolicyResource,
   BreakglassPolicyResource,
   NodePolicyResource,
+  SessionLimitPolicyResource,
 } from '../../api/types';
 import { CapabilityDefsScreen } from './CapabilityDefsScreen';
 import { JitPoliciesScreen } from './JitPoliciesScreen';
 import { BreakglassPoliciesScreen } from './BreakglassPoliciesScreen';
 import { NodePoliciesScreen } from './NodePoliciesScreen';
+import { SessionLimitPoliciesScreen } from './SessionLimitPoliciesScreen';
 
-/** The four config-policy routes, wired centrally by the shared router. */
+/** The five config-policy routes, wired centrally by the shared router. */
 export function createPoliciesRoutes(parent: AnyRoute): AnyRoute[] {
   return [
     createRoute({
@@ -35,6 +37,11 @@ export function createPoliciesRoutes(parent: AnyRoute): AnyRoute[] {
       getParentRoute: () => parent,
       path: '/node-policies',
       component: NodePoliciesScreen,
+    }),
+    createRoute({
+      getParentRoute: () => parent,
+      path: '/session-limit-policies',
+      component: SessionLimitPoliciesScreen,
     }),
   ];
 }
@@ -95,6 +102,18 @@ const demoNodePolicies: NodePolicyResource[] = [
   },
 ];
 
+const demoSessionLimitPolicies: SessionLimitPolicyResource[] = [
+  {
+    id: '018f0000-0000-7000-8000-0000000000d1',
+    name: 'sre-oncall-cap',
+    identitySelector: { team: 'sre' },
+    maxConcurrentSessions: 3,
+    maxSessionSeconds: 28800,
+    origin: 'api',
+    version: 1,
+  },
+];
+
 /**
  * Optional demo/E2E handlers so the full app renders content without a live
  * Control Plane. Unit tests define their own handlers via `server.use(...)`.
@@ -111,5 +130,8 @@ export const policiesHandlers: RequestHandler[] = [
   ),
   http.get(cp('/v1/node-policies'), () =>
     HttpResponse.json({ items: demoNodePolicies }),
+  ),
+  http.get(cp('/v1/session-limit-policies'), () =>
+    HttpResponse.json({ items: demoSessionLimitPolicies }),
   ),
 ];
