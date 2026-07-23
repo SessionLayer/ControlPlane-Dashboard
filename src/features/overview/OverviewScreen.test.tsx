@@ -1,11 +1,81 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+  RouterProvider,
+} from '@tanstack/react-router';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { http, type HttpResponseResolver } from 'msw';
 import { describe, expect, it } from 'vitest';
 
+import { AuthProvider } from '../../auth/AuthContext';
+import type { PlatformPermission } from '../../api/types';
 import { cp, ok, page, problem } from '../../test/msw';
 import { server } from '../../test/server';
-import { renderWithProviders } from '../../test/utils';
+import {
+  renderWithProviders,
+  seedAuth,
+  testOidcConfig,
+} from '../../test/utils';
 import { OverviewScreen } from './OverviewScreen';
+
+/**
+ * Renders OverviewScreen under a real (memory-history) router so its KPI tiles
+ * and alert-banner CTAs — which call `useNavigate` — have router context. Each
+ * destination the screen can navigate to gets a marker route; asserting the
+ * marker appears proves the click actually navigated, not just that a handler
+ * fired.
+ */
+function renderOverviewWithRouter(
+  options: { authenticated?: boolean; permissions?: PlatformPermission[] } = {},
+): void {
+  if (options.authenticated === true) {
+    seedAuth(options.permissions ?? []);
+  }
+  const rootRoute = createRootRoute({ component: () => <Outlet /> });
+  const indexRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/',
+    component: OverviewScreen,
+  });
+  const marker = (path: string) =>
+    createRoute({
+      getParentRoute: () => rootRoute,
+      path,
+      component: () => <div>{`ROUTE:${path}`}</div>,
+    });
+  const routeTree = rootRoute.addChildren([
+    indexRoute,
+    marker('/sessions'),
+    marker('/jit-requests'),
+    marker('/locks'),
+    marker('/break-glass'),
+    marker('/nodes'),
+  ]);
+  const router = createRouter({
+    routeTree,
+    history: createMemoryHistory({ initialEntries: ['/'] }),
+  });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <AuthProvider config={testOidcConfig} redirect={() => undefined}>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </QueryClientProvider>,
+  );
+}
 
 const PERMS = ['rbac:read', 'audit:read'] as const;
 
@@ -296,5 +366,52 @@ describe('OverviewScreen', () => {
     ).toBeInTheDocument();
     expect(within(region).getByText('0.1.0')).toBeInTheDocument();
     expect(await within(region).findByText('Healthy')).toBeInTheDocument();
+  });
+
+  it('navigates to the backing screen when a KPI tile is activated', async () => {
+    mockOverview({
+      sessions: () => page(SESSIONS),
+    });
+    renderOverviewWithRouter({ authenticated: true, permissions: [...PERMS] });
+
+    const region = await screen.findByRole('region', { name: 'Key metrics' });
+    const tile = await within(region).findByRole('button', {
+      name: /Active sessions/,
+    });
+    fireEvent.click(tile);
+
+    expect(await screen.findByText('ROUTE:/sessions')).toBeInTheDocument();
+  });
+
+  it('shows no alert banners when nothing needs attention', async () => {
+    mockOverview();
+    renderOverviewWithRouter({ authenticated: true, permissions: [...PERMS] });
+
+    await screen.findByText('No active sessions');
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('shows a fail banner for unreviewed break-glass activations and navigates on Review', async () => {
+    mockOverview({ bg: () => ok({ activations: BREAKGLASS }) });
+    renderOverviewWithRouter({ authenticated: true, permissions: [...PERMS] });
+
+    const banner = await screen.findByRole('status');
+    expect(banner).toHaveTextContent(
+      '1 break-glass activation awaiting mandatory review',
+    );
+    fireEvent.click(within(banner).getByRole('button', { name: 'Review' }));
+
+    expect(await screen.findByText('ROUTE:/break-glass')).toBeInTheDocument();
+  });
+
+  it('shows a warn banner for quarantined nodes and navigates on Inspect', async () => {
+    mockOverview({ nodes: () => ok({ nodes: NODES_MIXED }) });
+    renderOverviewWithRouter({ authenticated: true, permissions: [...PERMS] });
+
+    const banner = await screen.findByRole('status');
+    expect(banner).toHaveTextContent('1 node quarantined');
+    fireEvent.click(within(banner).getByRole('button', { name: 'Inspect' }));
+
+    expect(await screen.findByText('ROUTE:/nodes')).toBeInTheDocument();
   });
 });

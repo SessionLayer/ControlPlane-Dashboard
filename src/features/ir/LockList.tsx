@@ -42,6 +42,28 @@ function summarizeTarget(target: LockTarget): ReactNode {
   return parts.length > 0 ? parts.join(' · ') : '—';
 }
 
+// The contract has no standalone "kind" field on a lock — it's derived here
+// from which target facet is populated (the same data `summarizeTarget` reads),
+// not invented. A lock can only match one facet family (the create form is
+// exclusive: fleet-wide OR a set of facets), so the first populated facet is
+// unambiguous.
+const KIND_LABEL: Record<keyof Omit<LockTarget, 'all'>, string> = {
+  nodeIds: 'node',
+  identities: 'identity',
+  groups: 'group',
+  principals: 'principal',
+  nodeLabels: 'label',
+};
+
+function lockKind(target: LockTarget): string {
+  if (target.all === true) return 'fleet-wide';
+  const facet = FACETS.find(({ key }) => {
+    const values = target[key];
+    return values !== undefined && values.length > 0;
+  });
+  return facet !== undefined ? KIND_LABEL[facet.key] : '—';
+}
+
 export function LockList() {
   const [modal, setModal] = useState<Modal | null>(null);
   const locks = useLocks();
@@ -52,6 +74,10 @@ export function LockList() {
 
   const columns: Column<LockResource>[] = [
     { header: 'Target', cell: (r) => summarizeTarget(r.target) },
+    {
+      header: 'Kind',
+      cell: (r) => <Badge tone="neutral">{lockKind(r.target)}</Badge>,
+    },
     { header: 'Reason', cell: (r) => r.reason },
     {
       header: 'Expires',

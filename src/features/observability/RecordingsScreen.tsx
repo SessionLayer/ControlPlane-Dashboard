@@ -63,6 +63,7 @@ export function RecordingsScreen() {
         ),
     },
     { header: 'Retention', cell: (r) => <Time value={r.retentionUntil} /> },
+    { header: 'Created', cell: (r) => <Time value={r.createdAt} /> },
     { header: 'Started', cell: (r) => <Time value={r.startedAt} /> },
     {
       header: 'Actions',

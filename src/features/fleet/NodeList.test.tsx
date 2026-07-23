@@ -29,6 +29,7 @@ const nodes: NodeResource[] = [
     name: 'web-01',
     address: '10.0.1.11:22',
     labels: { env: 'prod' },
+    updatedAt: '2026-07-16T09:59:30Z',
   }),
   node({
     id: 'n2',
@@ -60,6 +61,11 @@ describe('NodeList', () => {
     // label chip key + value
     expect(screen.getByText('env')).toBeInTheDocument();
     expect(screen.getByText('prod')).toBeInTheDocument();
+    // "Last seen" is the closest honest proxy for a heartbeat the contract
+    // doesn't expose (updatedAt, not a real liveness signal) — exact UTC value
+    // lives in the title so the assertion doesn't depend on wall-clock time.
+    expect(screen.getByText('Last seen')).toBeInTheDocument();
+    expect(screen.getByTitle('2026-07-16T09:59:30.000Z')).toBeInTheDocument();
   });
 
   it('shows a loading state before the list resolves', () => {
