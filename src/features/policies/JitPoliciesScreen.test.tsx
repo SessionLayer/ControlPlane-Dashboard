@@ -122,6 +122,46 @@ describe('JitPoliciesScreen', () => {
     });
   });
 
+  // S29 (FR-SESS-2): JIT policies grant from the same full capability
+  // vocabulary as rules — the forwarding/X11 capabilities are selectable and
+  // land in the submitted payload.
+  it('grants the forwarding capabilities through the create payload', async () => {
+    let body: unknown;
+    server.use(
+      http.get(cp(PATH), () => page([])),
+      http.post(cp(PATH), async ({ request }) => {
+        body = await request.json();
+        return ok(policy({ name: 'fwd-policy' }), 201);
+      }),
+    );
+    renderWithProviders(<JitPoliciesScreen />, WRITE);
+    await screen.findByText(/no jit policies/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /new jit policy/i }));
+    fireEvent.change(screen.getByRole('textbox', { name: /^name/i }), {
+      target: { value: 'fwd-policy' },
+    });
+    fireEvent.change(screen.getByRole('spinbutton', { name: /max ttl/i }), {
+      target: { value: '900' },
+    });
+    for (const capability of [
+      'port_forward_local',
+      'port_forward_remote',
+      'x11',
+    ]) {
+      fireEvent.click(screen.getByRole('checkbox', { name: capability }));
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect((body as { capabilities: string[] }).capabilities).toEqual([
+        'port_forward_local',
+        'port_forward_remote',
+        'x11',
+      ]);
+    });
+  });
+
   it('keeps Save disabled until max TTL is positive', async () => {
     server.use(http.get(cp(PATH), () => page([])));
     renderWithProviders(<JitPoliciesScreen />, WRITE);
