@@ -161,4 +161,15 @@ export const irHandlers: RequestHandler[] = [
     ),
   ),
   http.delete('*/v1/pins/:id', () => new HttpResponse(null, { status: 204 })),
+
+  http.post('*/v1/otp', () =>
+    HttpResponse.json(
+      {
+        otpId: '018f0000-0000-7000-8000-0000000000e1',
+        otp: '482913',
+        expiresAt: '2026-07-16T18:05:00Z',
+      },
+      { status: 201 },
+    ),
+  ),
 ];

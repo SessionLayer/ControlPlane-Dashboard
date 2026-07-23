@@ -270,6 +270,23 @@ export function CasScreen() {
       ),
     },
     { header: 'Origin', cell: (r) => <OriginBadge origin={r.origin} /> },
+    {
+      header: 'Actions',
+      align: 'right',
+      cell: (r) =>
+        canRotate ? (
+          <Button
+            size="sm"
+            variant="info"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDialog({ kind: 'rotate', row: r });
+            }}
+          >
+            Rotate
+          </Button>
+        ) : null,
+    },
   ];
 
   return (

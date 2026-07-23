@@ -236,11 +236,7 @@ function CredentialsPanel({ account }: { account: ServiceAccountResource }) {
         min={1}
       />
       <FormActions>
-        <Button
-          variant="primary"
-          onClick={submitIssue}
-          disabled={issue.isPending}
-        >
+        <Button variant="info" onClick={submitIssue} disabled={issue.isPending}>
           {issue.isPending ? 'Issuing…' : 'Issue credential'}
         </Button>
       </FormActions>

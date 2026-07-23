@@ -51,6 +51,13 @@ function effectBadge(effect: Effect) {
   return <Badge tone={effect === 'deny' ? 'fail' : 'pass'}>{effect}</Badge>;
 }
 
+/** A compact `k=v k2=v2` summary of a selector object for the list column. */
+function selectorSummary(selector: Record<string, unknown>): string {
+  const entries = Object.entries(selector);
+  if (entries.length === 0) return '*';
+  return entries.map(([k, v]) => `${k}=${String(v)}`).join(' ');
+}
+
 function RuleForm({
   existing,
   onDone,
@@ -252,12 +259,26 @@ export function RulesScreen() {
       cell: (r) => (r.principals.length > 0 ? r.principals.join(', ') : '—'),
     },
     {
+      header: 'Selector',
+      cell: (r) => (
+        <span className="mono">
+          id:{selectorSummary(r.identitySelector)} node:
+          {selectorSummary(r.nodeLabelSelector)}
+        </span>
+      ),
+    },
+    {
       header: 'Capabilities',
       cell: (r) =>
         r.capabilities.length > 0 ? r.capabilities.join(', ') : '—',
     },
     { header: 'TTL', cell: (r) => `${String(r.ttlSeconds)}s`, align: 'right' },
     { header: 'Origin', cell: (r) => <OriginBadge origin={r.origin} /> },
+    {
+      header: 'Ver',
+      cell: (r) => <span className="mono">v{r.version}</span>,
+      align: 'right',
+    },
   ];
 
   return (

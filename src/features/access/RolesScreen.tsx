@@ -169,6 +169,11 @@ export function RolesScreen() {
           : '—',
     },
     { header: 'Origin', cell: (r) => <OriginBadge origin={r.origin} /> },
+    {
+      header: 'Ver',
+      cell: (r) => <span className="mono">v{r.version}</span>,
+      align: 'right',
+    },
   ];
 
   return (

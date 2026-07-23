@@ -111,7 +111,7 @@ describe('BreakGlassScreen — tab a11y', () => {
       name: 'Break-glass sections',
     });
     const activations = screen.getByRole('tab', { name: 'Activations' });
-    const credentials = screen.getByRole('tab', { name: 'Credentials' });
+    const credentials = screen.getByRole('tab', { name: 'FIDO2 credentials' });
 
     // Roving tabindex: only the active tab is in the tab order.
     expect(activations).toHaveAttribute('aria-selected', 'true');
@@ -167,7 +167,7 @@ describe('BreakGlassScreen — credentials', () => {
       permissions: [...MANAGE],
     });
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Credentials' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'FIDO2 credentials' }));
     expect(
       await screen.findByText('No break-glass credentials registered.'),
     ).toBeInTheDocument();
@@ -223,7 +223,7 @@ describe('BreakGlassScreen — credentials', () => {
       authenticated: true,
       permissions: ['audit:read'],
     });
-    fireEvent.click(screen.getByRole('tab', { name: 'Credentials' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'FIDO2 credentials' }));
     await screen.findByText('SHA256:credkey');
     expect(
       screen.queryByRole('button', { name: 'Register key…' }),
@@ -257,7 +257,7 @@ describe('BreakGlassScreen — offline codes', () => {
       permissions: [...MANAGE],
     });
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Offline codes' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Offline code batches' }));
     fireEvent.click(
       await screen.findByRole('button', { name: 'Issue codes…' }),
     );
@@ -291,7 +291,7 @@ describe('BreakGlassScreen — offline codes', () => {
       authenticated: true,
       permissions: ['audit:read'],
     });
-    fireEvent.click(screen.getByRole('tab', { name: 'Offline codes' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Offline code batches' }));
     expect(
       await screen.findByText('No offline codes issued.'),
     ).toBeInTheDocument();
