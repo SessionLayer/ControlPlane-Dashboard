@@ -29,7 +29,7 @@
     "@tanstack/react-router": "^1.87.0",
     "openapi-fetch": "^0.17.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@cyclonedx/cyclonedx-npm": "6.0.0",
